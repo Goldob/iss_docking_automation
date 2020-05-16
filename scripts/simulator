@@ -2,7 +2,7 @@
 
 import rospy
 from std_srvs.srv import Empty
-from std_msgs.msg import Float32
+from std_msgs.msg import Float32, Bool
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -46,7 +46,19 @@ class Simulator():
         self._roll_error = self._driver.find_element_by_id('roll') \
                 .find_element_by_class_name('error')
 
-   ###########################################################################
+        self._translation_status = self._driver \
+                .find_element_by_id('precision-translation-status')
+
+        self._rotation_status = self._driver \
+                .find_element_by_id('precision-rotation-status')
+
+        self._toggle_translation_precise = self._driver \
+                .find_element_by_id('toggle-translation')
+
+        self._toggle_rotation_precise = self._driver \
+                .find_element_by_id('toggle-rotation')
+
+    ###########################################################################
     # Translations 
     ###########################################################################
 
@@ -124,6 +136,22 @@ class Simulator():
     def get_roll_error(self):
         return float(self._roll_error.text[:-1])
 
+    ###########################################################################
+    # Precision 
+    ###########################################################################
+
+    def is_translation_precise(self):
+        return 'large' not in self._translation_status.get_attribute('class')
+    
+    def toggle_translation_precise(self, _):
+        self._toggle_translation_precise.click()
+
+    def is_rotation_precise(self):
+        return 'large' not in self._rotation_status.get_attribute('class') 
+
+    def toggle_rotation_precise(self, _):
+        self._toggle_rotation_precise.click()
+
 
 if __name__ == '__main__':
     rospy.init_node('iss_simulator')
@@ -152,6 +180,18 @@ if __name__ == '__main__':
     yaw_error_pub   = rospy.Publisher('/measurements/yaw_error'  , Float32, queue_size=1)
     pitch_error_pub = rospy.Publisher('/measurements/pitch_error', Float32, queue_size=1)
     roll_error_pub  = rospy.Publisher('/measurements/roll_error' , Float32, queue_size=1)
+    
+    translation_precise_pub = rospy.Publisher('/controls/translation_precise',
+                                              Bool, queue_size=1)
+
+    rotation_precise_pub = rospy.Publisher('/controls/rotation_precise',
+                                           Bool, queue_size=1)
+
+    rospy.Service('toggle_translation_precise', Empty,
+                  simulator.toggle_translation_precise)
+    
+    rospy.Service('toggle_rotation_precise', Empty,
+                  simulator.toggle_rotation_precise)
 
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
@@ -161,6 +201,9 @@ if __name__ == '__main__':
         yaw_error_pub.publish(simulator.get_yaw_error())
         pitch_error_pub.publish(simulator.get_pitch_error())
         roll_error_pub.publish(simulator.get_roll_error())
+
+        translation_precise_pub.publish(simulator.is_translation_precise())
+        rotation_precise_pub.publish(simulator.is_rotation_precise())
 
         rate.sleep()
 
