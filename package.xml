@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>iss_docking_automation</name>
+  <version>0.0.0</version>
+  <description>The iss_docking_automation package</description>
+
+  <maintainer email="goldob@todo.todo">goldob</maintainer>
+  <license>TODO</license>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>rospy</depend>
+  <depend>std_srvs</depend>
+  <depend>python-selenium-pip</depend>
+
+</package>

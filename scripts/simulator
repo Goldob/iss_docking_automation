@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+
+import rospy
+from std_srvs.srv import Empty
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+import time
+
+START_DELAY = 5.0
+
+class Simulator():
+    def __init__(self):
+        self._driver = webdriver.Firefox()
+        self._driver.get('https://iss-sim.spacex.com/')
+        
+        WebDriverWait(self._driver, 30) \
+            .until(EC.element_to_be_clickable((By.ID, 'begin-button'))).click()
+        
+        WebDriverWait(self._driver, 30) \
+            .until(EC.visibility_of_element_located((By.ID, 'hud-darken')))
+
+        time.sleep(START_DELAY)
+        
+    ###########################################################################
+    # Translations 
+    ###########################################################################
+
+    def translate_left(self, _):
+        ActionChains(self._driver).send_keys('a').perform()
+        return Empty()
+
+    def translate_right(self, _):
+        ActionChains(self._driver).send_keys('d').perform()
+        return Empty()
+
+    def translate_up(self, _):
+        ActionChains(self._driver).send_keys('w').perform()
+        return Empty()
+
+    def translate_down(self, _):
+        ActionChains(self._driver).send_keys('s').perform()
+        return Empty()
+
+    def translate_forward(self, _):
+        ActionChains(self._driver).send_keys('e').perform()
+        return Empty()
+
+    def translate_backward(self, _):
+        ActionChains(self._driver).send_keys('q').perform()
+        return Empty()
+
+    ###########################################################################
+    # Rotations 
+    ###########################################################################
+
+    def yaw_left(self, _):
+        ActionChains(self._driver).send_keys(Keys.LEFT).perform()
+        return Empty()
+
+    def yaw_right(self, _):
+        ActionChains(self._driver).send_keys(Keys.RIGHT).perform()
+        return Empty()
+
+    def pitch_up(self, _):
+        ActionChains(self._driver).send_keys(Keys.UP).perform()
+        return Empty()
+
+    def pitch_down(self, _):
+        ActionChains(self._driver).send_keys(Keys.DOWN).perform()
+        return Empty()
+
+    def roll_left(self, _):
+        ActionChains(self._driver).send_keys('<').perform()
+        return Empty()
+
+    def roll_right(self, _):
+        ActionChains(self._driver).send_keys('>').perform()
+        return Empty()
+
+
+if __name__ == '__main__':
+    rospy.init_node('iss_simulator')
+    simulator = Simulator()
+    
+    rospy.Service('translate_left', Empty, simulator.translate_left)
+    rospy.Service('translate_right', Empty, simulator.translate_right)
+    rospy.Service('translate_up', Empty, simulator.translate_up)
+    rospy.Service('translate_down', Empty, simulator.translate_down)
+    rospy.Service('translate_forward', Empty, simulator.translate_forward)
+    rospy.Service('translate_backward', Empty, simulator.translate_backward)
+
+    rospy.Service('yaw_left', Empty, simulator.yaw_left)
+    rospy.Service('yaw_right', Empty, simulator.yaw_right)
+    rospy.Service('pitch_up', Empty, simulator.pitch_up)
+    rospy.Service('pitch_down', Empty, simulator.pitch_down)
+    rospy.Service('roll_left', Empty, simulator.roll_left)
+    rospy.Service('roll_right', Empty, simulator.roll_right)
+
+    rospy.spin()
+
