@@ -1,0 +1,4 @@
+<launch>
+	<node name="simulator" type="simulator" pkg="iss_docking_automation" />
+	<node name="error_to_tf" type="error_to_tf" pkg="iss_docking_automation" />
+</launch>

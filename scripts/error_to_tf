@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+
+import rospy
+import tf2_ros
+import tf_conversions
+
+from geometry_msgs.msg import TransformStamped
+from std_msgs.msg import Float32
+
+import numpy as np
+
+class ErrorBuffer:
+    def __init__(self):
+        self._error = {}
+
+    def handle_x_error(self, msg):
+        self._error['x'] = msg.data
+
+    def handle_y_error(self, msg):
+        self._error['y'] = msg.data
+
+    def handle_z_error(self, msg):
+        self._error['z'] = msg.data
+
+    def handle_yaw_error(self, msg):
+        self._error['yaw'] = np.radians(msg.data)
+
+    def handle_pitch_error(self, msg):
+        self._error['pitch'] = np.radians(msg.data)
+
+    def handle_roll_error(self, msg):
+        self._error['roll'] = np.radians(msg.data)
+
+    def is_initialized(self):
+        return len(self._error) == 6
+    
+    def get_error(self):
+        return self._error
+
+
+if __name__ == '__main__':
+    rospy.init_node('error_to_tf')
+    error_buffer = ErrorBuffer()
+    
+    rospy.Subscriber('measurements/x_error', Float32,
+                   error_buffer.handle_x_error)
+
+    rospy.Subscriber('measurements/y_error', Float32,
+                   error_buffer.handle_y_error)
+
+    rospy.Subscriber('measurements/z_error', Float32,
+                   error_buffer.handle_z_error)
+
+    rospy.Subscriber('measurements/yaw_error', Float32,
+                   error_buffer.handle_yaw_error)
+
+    rospy.Subscriber('measurements/pitch_error', Float32,
+                   error_buffer.handle_pitch_error)
+
+    rospy.Subscriber('measurements/roll_error', Float32,
+                   error_buffer.handle_roll_error)
+
+    rate = rospy.Rate(20)
+    while not rospy.is_shutdown():
+        
+        if error_buffer.is_initialized():
+            
+            error = error_buffer.get_error()
+            t = TransformStamped()
+
+            t.header.stamp = rospy.Time.now()
+            t.header.frame_id = 'iss'
+            t.child_frame_id = 'base_link'
+
+            t.transform.translation.x = error['x']
+            t.transform.translation.y = error['y']
+            t.transform.translation.z = error['z']
+            
+            q = tf_conversions.transformations \
+                    .quaternion_from_euler(error['roll'],
+                                           error['pitch'],
+                                           error['yaw'])
+            
+            t.transform.rotation.x = q[0]
+            t.transform.rotation.y = q[1]
+            t.transform.rotation.z = q[2]
+            t.transform.rotation.w = q[3]
+            
+            tf2_ros.TransformBroadcaster().sendTransform(t)
+
+        rate.sleep()
