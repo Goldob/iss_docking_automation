@@ -158,39 +158,39 @@ if __name__ == '__main__':
     simulator = Simulator()
     
     # Translation services
-    rospy.Service('translate_left'    , Empty, simulator.translate_left)
-    rospy.Service('translate_right'   , Empty, simulator.translate_right)
-    rospy.Service('translate_up'      , Empty, simulator.translate_up)
-    rospy.Service('translate_down'    , Empty, simulator.translate_down)
-    rospy.Service('translate_forward' , Empty, simulator.translate_forward)
-    rospy.Service('translate_backward', Empty, simulator.translate_backward)
+    rospy.Service('controls/translate_left'    , Empty, simulator.translate_left)
+    rospy.Service('controls/translate_right'   , Empty, simulator.translate_right)
+    rospy.Service('controls/translate_up'      , Empty, simulator.translate_up)
+    rospy.Service('controls/translate_down'    , Empty, simulator.translate_down)
+    rospy.Service('controls/translate_forward' , Empty, simulator.translate_forward)
+    rospy.Service('controls/translate_backward', Empty, simulator.translate_backward)
 
     # Rotation services
-    rospy.Service('yaw_left'  , Empty, simulator.yaw_left)
-    rospy.Service('yaw_right' , Empty, simulator.yaw_right)
-    rospy.Service('pitch_up'  , Empty, simulator.pitch_up)
-    rospy.Service('pitch_down', Empty, simulator.pitch_down)
-    rospy.Service('roll_left' , Empty, simulator.roll_left)
-    rospy.Service('roll_right', Empty, simulator.roll_right)
+    rospy.Service('controls/yaw_left'  , Empty, simulator.yaw_left)
+    rospy.Service('controls/yaw_right' , Empty, simulator.yaw_right)
+    rospy.Service('controls/pitch_up'  , Empty, simulator.pitch_up)
+    rospy.Service('controls/pitch_down', Empty, simulator.pitch_down)
+    rospy.Service('controls/roll_left' , Empty, simulator.roll_left)
+    rospy.Service('controls/roll_right', Empty, simulator.roll_right)
 
     # Measurement publishers 
-    x_error_pub     = rospy.Publisher('/measurements/x_error'    , Float32, queue_size=1)
-    y_error_pub     = rospy.Publisher('/measurements/y_error'    , Float32, queue_size=1)
-    z_error_pub     = rospy.Publisher('/measurements/z_error'    , Float32, queue_size=1)
-    yaw_error_pub   = rospy.Publisher('/measurements/yaw_error'  , Float32, queue_size=1)
-    pitch_error_pub = rospy.Publisher('/measurements/pitch_error', Float32, queue_size=1)
-    roll_error_pub  = rospy.Publisher('/measurements/roll_error' , Float32, queue_size=1)
+    x_error_pub     = rospy.Publisher('measurements/x_error'    , Float32, queue_size=1)
+    y_error_pub     = rospy.Publisher('measurements/y_error'    , Float32, queue_size=1)
+    z_error_pub     = rospy.Publisher('measurements/z_error'    , Float32, queue_size=1)
+    yaw_error_pub   = rospy.Publisher('measurements/yaw_error'  , Float32, queue_size=1)
+    pitch_error_pub = rospy.Publisher('measurements/pitch_error', Float32, queue_size=1)
+    roll_error_pub  = rospy.Publisher('measurements/roll_error' , Float32, queue_size=1)
     
-    translation_precise_pub = rospy.Publisher('/controls/translation_precise',
+    translation_precise_pub = rospy.Publisher('controls/translation_precise',
                                               Bool, queue_size=1)
 
-    rotation_precise_pub = rospy.Publisher('/controls/rotation_precise',
+    rotation_precise_pub = rospy.Publisher('controls/rotation_precise',
                                            Bool, queue_size=1)
 
-    rospy.Service('toggle_translation_precise', Empty,
+    rospy.Service('controls/toggle_translation_precise', Empty,
                   simulator.toggle_translation_precise)
     
-    rospy.Service('toggle_rotation_precise', Empty,
+    rospy.Service('controls/toggle_rotation_precise', Empty,
                   simulator.toggle_rotation_precise)
 
     rate = rospy.Rate(10)
