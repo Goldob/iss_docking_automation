@@ -12,6 +12,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 import time
+import numpy as np
 
 START_DELAY = 5.0
 
@@ -128,13 +129,13 @@ class Simulator():
         return float(self._z_error.text[:-2])
  
     def get_yaw_error(self):
-        return float(self._yaw_error.text[:-1])
+        return np.radians(float(self._yaw_error.text[:-1]))
  
     def get_pitch_error(self):
-        return float(self._pitch_error.text[:-1])
+        return np.radians(float(self._pitch_error.text[:-1]))
  
     def get_roll_error(self):
-        return float(self._roll_error.text[:-1])
+        return np.radians(float(self._roll_error.text[:-1]))
 
     ###########################################################################
     # Precision 
