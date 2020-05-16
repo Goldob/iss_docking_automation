@@ -2,6 +2,7 @@
 
 import rospy
 from std_srvs.srv import Empty
+from std_msgs.msg import Float32
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -27,7 +28,25 @@ class Simulator():
 
         time.sleep(START_DELAY)
         
-    ###########################################################################
+        self._x_error = self._driver.find_element_by_id('x-range') \
+                .find_element_by_class_name('distance')
+       
+        self._y_error = self._driver.find_element_by_id('y-range') \
+               .find_element_by_class_name('distance')
+
+        self._z_error = self._driver.find_element_by_id('z-range') \
+                .find_element_by_class_name('distance')
+
+        self._yaw_error = self._driver.find_element_by_id('yaw') \
+                .find_element_by_class_name('error')
+        
+        self._pitch_error = self._driver.find_element_by_id('pitch') \
+                .find_element_by_class_name('error')
+        
+        self._roll_error = self._driver.find_element_by_id('roll') \
+                .find_element_by_class_name('error')
+
+   ###########################################################################
     # Translations 
     ###########################################################################
 
@@ -83,24 +102,66 @@ class Simulator():
         ActionChains(self._driver).send_keys('>').perform()
         return Empty()
 
+    ###########################################################################
+    # Measurements 
+    ###########################################################################
+
+    def get_x_error(self):
+        return float(self._x_error.text[:-2])
+       
+    def get_y_error(self):
+        return float(self._y_error.text[:-2])
+
+    def get_z_error(self):
+        return float(self._z_error.text[:-2])
+ 
+    def get_yaw_error(self):
+        return float(self._yaw_error.text[:-1])
+ 
+    def get_pitch_error(self):
+        return float(self._pitch_error.text[:-1])
+ 
+    def get_roll_error(self):
+        return float(self._roll_error.text[:-1])
+
 
 if __name__ == '__main__':
     rospy.init_node('iss_simulator')
     simulator = Simulator()
     
-    rospy.Service('translate_left', Empty, simulator.translate_left)
-    rospy.Service('translate_right', Empty, simulator.translate_right)
-    rospy.Service('translate_up', Empty, simulator.translate_up)
-    rospy.Service('translate_down', Empty, simulator.translate_down)
-    rospy.Service('translate_forward', Empty, simulator.translate_forward)
+    # Translation services
+    rospy.Service('translate_left'    , Empty, simulator.translate_left)
+    rospy.Service('translate_right'   , Empty, simulator.translate_right)
+    rospy.Service('translate_up'      , Empty, simulator.translate_up)
+    rospy.Service('translate_down'    , Empty, simulator.translate_down)
+    rospy.Service('translate_forward' , Empty, simulator.translate_forward)
     rospy.Service('translate_backward', Empty, simulator.translate_backward)
 
-    rospy.Service('yaw_left', Empty, simulator.yaw_left)
-    rospy.Service('yaw_right', Empty, simulator.yaw_right)
-    rospy.Service('pitch_up', Empty, simulator.pitch_up)
+    # Rotation services
+    rospy.Service('yaw_left'  , Empty, simulator.yaw_left)
+    rospy.Service('yaw_right' , Empty, simulator.yaw_right)
+    rospy.Service('pitch_up'  , Empty, simulator.pitch_up)
     rospy.Service('pitch_down', Empty, simulator.pitch_down)
-    rospy.Service('roll_left', Empty, simulator.roll_left)
+    rospy.Service('roll_left' , Empty, simulator.roll_left)
     rospy.Service('roll_right', Empty, simulator.roll_right)
 
-    rospy.spin()
+    # Measurement publishers 
+    x_error_pub     = rospy.Publisher('/measurements/x_error'    , Float32, queue_size=1)
+    y_error_pub     = rospy.Publisher('/measurements/y_error'    , Float32, queue_size=1)
+    z_error_pub     = rospy.Publisher('/measurements/z_error'    , Float32, queue_size=1)
+    yaw_error_pub   = rospy.Publisher('/measurements/yaw_error'  , Float32, queue_size=1)
+    pitch_error_pub = rospy.Publisher('/measurements/pitch_error', Float32, queue_size=1)
+    roll_error_pub  = rospy.Publisher('/measurements/roll_error' , Float32, queue_size=1)
+
+    rate = rospy.Rate(10)
+    while not rospy.is_shutdown():
+        x_error_pub.publish(simulator.get_x_error())
+        y_error_pub.publish(simulator.get_y_error())
+        z_error_pub.publish(simulator.get_z_error())
+        yaw_error_pub.publish(simulator.get_yaw_error())
+        pitch_error_pub.publish(simulator.get_pitch_error())
+        roll_error_pub.publish(simulator.get_roll_error())
+
+        rate.sleep()
+
 
