@@ -11,6 +11,8 @@
   <depend>rospy</depend>
   <depend>std_srvs</depend>
   <depend>std_msgs</depend>
+  <depend>python-scipy</depend>
+  <depend>python-pandas</depend>
   <depend>python-selenium-pip</depend>
 
 </package>
