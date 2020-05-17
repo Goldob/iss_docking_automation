@@ -1,0 +1,139 @@
+#!/usr/bin/env python
+
+import rospy
+import tf2_ros
+import tf_conversions
+
+from std_srvs.srv import Empty
+from std_msgs.msg import Float64
+
+import numpy as np
+from iss_docking_automation import StateBuffer
+
+NEVER = rospy.Duration.from_sec(1e9)
+
+class RepeatingTrigger:
+    def __init__(self, function):
+        self._ratio = 0
+        self._function   = function
+        self._duration = NEVER
+
+        self._set_timer()
+
+    def _run(self, _):
+        self._function()
+        self._timer = rospy.Timer(self._duration, self._run)
+
+    def _set_timer(self):
+        self._timer = rospy.Timer(self._duration, self._run)
+        self._next_occurence = rospy.Time().now() + self._duration
+
+    def set_ratio(self, ratio):
+        time = rospy.Time.now()
+
+        if ratio < 1e-9:
+            self._duration = NEVER
+        else:
+            self._duration = rospy.Duration.from_sec(1. / ratio)
+
+        old_ratio = self._ratio
+        self._ratio = ratio
+
+        if ratio < old_ratio:
+            self._timer.shutdown()
+            self._set_timer()
+
+        if ratio > old_ratio:
+            if time + self._duration < self._next_occurence:
+                self._timer.shutdown()
+                self._set_timer()
+
+# Source: https://answers.ros.org/question/196149/how-to-rotate-vector-by-quaternion-in-python/?answer=196155#post-id-196155
+def qv_mult(q1, v1):
+    mag = np.linalg.norm(v1)
+
+    v1 = tf_conversions.transformations.unit_vector(v1)
+    q2 = list(v1)
+    q2.append(0.0)
+    return tf_conversions.transformations.quaternion_multiply(
+        tf_conversions.transformations.quaternion_multiply(q1, q2),
+        tf_conversions.transformations.quaternion_conjugate(q1)
+    )[:3] * mag
+
+if __name__ == '__main__':
+    rospy.init_node('corrections_applicator')
+    corrections_buffer = StateBuffer()
+
+    # Translation corrections
+    rospy.Subscriber('corrections/x', Float64, corrections_buffer.handle_x)
+    rospy.Subscriber('corrections/y', Float64, corrections_buffer.handle_y)
+    rospy.Subscriber('corrections/z', Float64, corrections_buffer.handle_z)
+
+    # Rotation corrections
+    rospy.Subscriber('corrections/yaw'  , Float64, corrections_buffer.handle_yaw)
+    rospy.Subscriber('corrections/pitch', Float64, corrections_buffer.handle_pitch)
+    rospy.Subscriber('corrections/roll' , Float64, corrections_buffer.handle_roll)
+
+    # Translation services
+    rospy.wait_for_service('controls/translate_left')
+    rospy.wait_for_service('controls/translate_right')
+    rospy.wait_for_service('controls/translate_up')
+    rospy.wait_for_service('controls/translate_down')
+    rospy.wait_for_service('controls/translate_forward')
+    rospy.wait_for_service('controls/translate_backward')
+
+    translate_left     = rospy.ServiceProxy('controls/translate_left'    , Empty)
+    translate_right    = rospy.ServiceProxy('controls/translate_right'   , Empty)
+    translate_up       = rospy.ServiceProxy('controls/translate_up'      , Empty)
+    translate_down     = rospy.ServiceProxy('controls/translate_down'    , Empty)
+    translate_forward  = rospy.ServiceProxy('controls/translate_forward' , Empty)
+    translate_backward = rospy.ServiceProxy('controls/translate_backward', Empty)
+
+    translate_left_trigger     = RepeatingTrigger(translate_left)
+    translate_right_trigger    = RepeatingTrigger(translate_right)
+    translate_up_trigger       = RepeatingTrigger(translate_up)
+    translate_down_trigger     = RepeatingTrigger(translate_down)
+    translate_forward_trigger  = RepeatingTrigger(translate_forward)
+    translate_backward_trigger = RepeatingTrigger(translate_backward)
+
+    tf_buffer = tf2_ros.Buffer()
+    tf2_ros.TransformListener(tf_buffer)
+
+    rate = rospy.Rate(20)
+    while not rospy.is_shutdown():
+        if not corrections_buffer.is_initialized():
+            rate.sleep()
+            continue
+
+        try:
+            t = tf_buffer.lookup_transform('base_link', 'iss', rospy.Time())
+        except (tf2_ros.LookupException,
+                tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException):
+            rate.sleep()
+            continue
+
+        corrections = corrections_buffer.get_state()
+
+        q = [
+            t.transform.rotation.x,
+            t.transform.rotation.y,
+            t.transform.rotation.z,
+            t.transform.rotation.w
+        ]
+
+        # Calculate desired actuations in local coordinates
+        translation_actuations = qv_mult(q, [
+            corrections['x'],
+            corrections['y'],
+            corrections['z']
+        ])
+
+        translate_left_trigger    .set_ratio(max(0, -translation_actuations[0]))
+        translate_right_trigger   .set_ratio(max(0,  translation_actuations[0]))
+        translate_up_trigger      .set_ratio(max(0,  translation_actuations[1]))
+        translate_down_trigger    .set_ratio(max(0, -translation_actuations[1]))
+        translate_forward_trigger .set_ratio(max(0, -translation_actuations[2]))
+        translate_backward_trigger.set_ratio(max(0,  translation_actuations[2]))
+
+        rate.sleep()

@@ -6,36 +6,36 @@ import tf_conversions
 
 from geometry_msgs.msg import TransformStamped
 from std_msgs.msg import Float64
-from iss_docking_automation import ErrorBuffer
+from iss_docking_automation import StateBuffer
 
 if __name__ == '__main__':
     rospy.init_node('error_to_tf')
-    error_buffer = ErrorBuffer()
+    error_buffer = StateBuffer()
 
     rospy.Subscriber('measurements/x_error', Float64,
-                   error_buffer.handle_x_error)
+                   error_buffer.handle_x)
 
     rospy.Subscriber('measurements/y_error', Float64,
-                   error_buffer.handle_y_error)
+                   error_buffer.handle_y)
 
     rospy.Subscriber('measurements/z_error', Float64,
-                   error_buffer.handle_z_error)
+                   error_buffer.handle_z)
 
     rospy.Subscriber('measurements/yaw_error', Float64,
-                   error_buffer.handle_yaw_error)
+                   error_buffer.handle_yaw)
 
     rospy.Subscriber('measurements/pitch_error', Float64,
-                   error_buffer.handle_pitch_error)
+                   error_buffer.handle_pitch)
 
     rospy.Subscriber('measurements/roll_error', Float64,
-                   error_buffer.handle_roll_error)
+                   error_buffer.handle_roll)
 
     rate = rospy.Rate(20)
     while not rospy.is_shutdown():
 
         if error_buffer.is_initialized():
 
-            error = error_buffer.get_error()
+            error = error_buffer.get_state()
             t = TransformStamped()
 
             t.header.stamp = rospy.Time.now()

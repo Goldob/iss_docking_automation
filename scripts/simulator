@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from std_srvs.srv import Empty
+from std_srvs.srv import Empty, EmptyResponse
 from std_msgs.msg import Float64, Bool
 
 from selenium import webdriver
@@ -65,27 +65,27 @@ class Simulator():
 
     def translate_left(self, _):
         ActionChains(self._driver).send_keys('a').perform()
-        return Empty()
+        return EmptyResponse()
 
     def translate_right(self, _):
         ActionChains(self._driver).send_keys('d').perform()
-        return Empty()
+        return EmptyResponse()
 
     def translate_up(self, _):
         ActionChains(self._driver).send_keys('w').perform()
-        return Empty()
+        return EmptyResponse()
 
     def translate_down(self, _):
         ActionChains(self._driver).send_keys('s').perform()
-        return Empty()
+        return EmptyResponse()
 
     def translate_forward(self, _):
         ActionChains(self._driver).send_keys('e').perform()
-        return Empty()
+        return EmptyResponse()
 
     def translate_backward(self, _):
         ActionChains(self._driver).send_keys('q').perform()
-        return Empty()
+        return EmptyResponse()
 
     ###########################################################################
     # Rotations
@@ -93,27 +93,27 @@ class Simulator():
 
     def yaw_left(self, _):
         ActionChains(self._driver).send_keys(Keys.LEFT).perform()
-        return Empty()
+        return EmptyResponse()
 
     def yaw_right(self, _):
         ActionChains(self._driver).send_keys(Keys.RIGHT).perform()
-        return Empty()
+        return EmptyResponse()
 
     def pitch_up(self, _):
         ActionChains(self._driver).send_keys(Keys.UP).perform()
-        return Empty()
+        return EmptyResponse()
 
     def pitch_down(self, _):
         ActionChains(self._driver).send_keys(Keys.DOWN).perform()
-        return Empty()
+        return EmptyResponse()
 
     def roll_left(self, _):
         ActionChains(self._driver).send_keys('<').perform()
-        return Empty()
+        return EmptyResponse()
 
     def roll_right(self, _):
         ActionChains(self._driver).send_keys('>').perform()
-        return Empty()
+        return EmptyResponse()
 
     ###########################################################################
     # Measurements

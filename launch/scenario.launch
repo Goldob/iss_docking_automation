@@ -6,9 +6,9 @@
 		type="trajectory_planner"
 		pkg="iss_docking_automation">
 
-				<param name="maneuver_time" value="60" />
+				<param name="maneuver_time" value="300" />
 				<param name="target_velocity" value="0.1" />
-				<param name="stabilization_distance" value="0.5" />
+				<param name="stabilization_distance" value="1.0" />
   </node>
 
 	<group ns="controllers">
@@ -36,4 +36,8 @@
 			<arg name="variable" value="roll" />
 		</include>
 	</group>
+
+	<node name="corrections_applicator"
+		type="corrections_applicator"
+		pkg="iss_docking_automation" />
 </launch>

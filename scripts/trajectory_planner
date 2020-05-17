@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from iss_docking_automation import ErrorBuffer
+from iss_docking_automation import StateBuffer
 from scipy.interpolate import interp1d
 
 
@@ -166,7 +166,7 @@ def plot_results(maneuver_time, path_poses, history,
 
 if __name__ == '__main__':
     rospy.init_node('trajectory_planner')
-    error_buffer = ErrorBuffer()
+    error_buffer = StateBuffer()
 
     maneuver_time = rospy.get_param('~maneuver_time')
     target_velocity = rospy.get_param('~target_velocity')
@@ -176,22 +176,22 @@ if __name__ == '__main__':
     # Initial measurement subscribers
 
     rospy.Subscriber('measurements/x_error', Float64,
-                     error_buffer.handle_x_error)
+                     error_buffer.handle_x)
 
     rospy.Subscriber('measurements/y_error', Float64,
-                     error_buffer.handle_y_error)
+                     error_buffer.handle_y)
 
     rospy.Subscriber('measurements/z_error', Float64,
-                     error_buffer.handle_z_error)
+                     error_buffer.handle_z)
 
     rospy.Subscriber('measurements/yaw_error', Float64,
-                     error_buffer.handle_yaw_error)
+                     error_buffer.handle_yaw)
 
     rospy.Subscriber('measurements/pitch_error', Float64,
-                     error_buffer.handle_pitch_error)
+                     error_buffer.handle_pitch)
 
     rospy.Subscriber('measurements/roll_error', Float64,
-                     error_buffer.handle_roll_error)
+                     error_buffer.handle_roll)
 
     # Target trajectory publishers
 
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
 
         if error_buffer.is_initialized():
-            error = error_buffer.get_error()
+            error = error_buffer.get_state()
             error = dict(error)
 
             if not trajectory_initialized:
