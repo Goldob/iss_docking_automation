@@ -2,7 +2,7 @@
 
 import rospy
 from std_srvs.srv import Empty
-from std_msgs.msg import Float32, Bool
+from std_msgs.msg import Float64, Bool
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -20,18 +20,18 @@ class Simulator():
     def __init__(self):
         self._driver = webdriver.Firefox()
         self._driver.get('https://iss-sim.spacex.com/')
-        
+
         WebDriverWait(self._driver, 30) \
             .until(EC.element_to_be_clickable((By.ID, 'begin-button'))).click()
-        
+
         WebDriverWait(self._driver, 30) \
             .until(EC.visibility_of_element_located((By.ID, 'hud-darken')))
 
         time.sleep(START_DELAY)
-        
+
         self._x_error = self._driver.find_element_by_id('x-range') \
                 .find_element_by_class_name('distance')
-       
+
         self._y_error = self._driver.find_element_by_id('y-range') \
                .find_element_by_class_name('distance')
 
@@ -40,10 +40,10 @@ class Simulator():
 
         self._yaw_error = self._driver.find_element_by_id('yaw') \
                 .find_element_by_class_name('error')
-        
+
         self._pitch_error = self._driver.find_element_by_id('pitch') \
                 .find_element_by_class_name('error')
-        
+
         self._roll_error = self._driver.find_element_by_id('roll') \
                 .find_element_by_class_name('error')
 
@@ -60,7 +60,7 @@ class Simulator():
                 .find_element_by_id('toggle-rotation')
 
     ###########################################################################
-    # Translations 
+    # Translations
     ###########################################################################
 
     def translate_left(self, _):
@@ -88,7 +88,7 @@ class Simulator():
         return Empty()
 
     ###########################################################################
-    # Rotations 
+    # Rotations
     ###########################################################################
 
     def yaw_left(self, _):
@@ -116,39 +116,39 @@ class Simulator():
         return Empty()
 
     ###########################################################################
-    # Measurements 
+    # Measurements
     ###########################################################################
 
     def get_x_error(self):
         return float(self._x_error.text[:-2])
-       
+
     def get_y_error(self):
         return float(self._y_error.text[:-2])
 
     def get_z_error(self):
         return float(self._z_error.text[:-2])
- 
+
     def get_yaw_error(self):
         return np.radians(float(self._yaw_error.text[:-1]))
- 
+
     def get_pitch_error(self):
         return np.radians(float(self._pitch_error.text[:-1]))
- 
+
     def get_roll_error(self):
         return np.radians(float(self._roll_error.text[:-1]))
 
     ###########################################################################
-    # Precision 
+    # Precision
     ###########################################################################
 
     def is_translation_precise(self):
         return 'large' not in self._translation_status.get_attribute('class')
-    
+
     def toggle_translation_precise(self, _):
         self._toggle_translation_precise.click()
 
     def is_rotation_precise(self):
-        return 'large' not in self._rotation_status.get_attribute('class') 
+        return 'large' not in self._rotation_status.get_attribute('class')
 
     def toggle_rotation_precise(self, _):
         self._toggle_rotation_precise.click()
@@ -157,7 +157,7 @@ class Simulator():
 if __name__ == '__main__':
     rospy.init_node('iss_simulator')
     simulator = Simulator()
-    
+
     # Translation services
     rospy.Service('controls/translate_left'    , Empty, simulator.translate_left)
     rospy.Service('controls/translate_right'   , Empty, simulator.translate_right)
@@ -174,14 +174,14 @@ if __name__ == '__main__':
     rospy.Service('controls/roll_left' , Empty, simulator.roll_left)
     rospy.Service('controls/roll_right', Empty, simulator.roll_right)
 
-    # Measurement publishers 
-    x_error_pub     = rospy.Publisher('measurements/x_error'    , Float32, queue_size=1)
-    y_error_pub     = rospy.Publisher('measurements/y_error'    , Float32, queue_size=1)
-    z_error_pub     = rospy.Publisher('measurements/z_error'    , Float32, queue_size=1)
-    yaw_error_pub   = rospy.Publisher('measurements/yaw_error'  , Float32, queue_size=1)
-    pitch_error_pub = rospy.Publisher('measurements/pitch_error', Float32, queue_size=1)
-    roll_error_pub  = rospy.Publisher('measurements/roll_error' , Float32, queue_size=1)
-    
+    # Measurement publishers
+    x_error_pub     = rospy.Publisher('measurements/x_error'    , Float64, queue_size=1)
+    y_error_pub     = rospy.Publisher('measurements/y_error'    , Float64, queue_size=1)
+    z_error_pub     = rospy.Publisher('measurements/z_error'    , Float64, queue_size=1)
+    yaw_error_pub   = rospy.Publisher('measurements/yaw_error'  , Float64, queue_size=1)
+    pitch_error_pub = rospy.Publisher('measurements/pitch_error', Float64, queue_size=1)
+    roll_error_pub  = rospy.Publisher('measurements/roll_error' , Float64, queue_size=1)
+
     translation_precise_pub = rospy.Publisher('controls/translation_precise',
                                               Bool, queue_size=1)
 
@@ -190,7 +190,7 @@ if __name__ == '__main__':
 
     rospy.Service('controls/toggle_translation_precise', Empty,
                   simulator.toggle_translation_precise)
-    
+
     rospy.Service('controls/toggle_rotation_precise', Empty,
                   simulator.toggle_rotation_precise)
 
@@ -207,5 +207,3 @@ if __name__ == '__main__':
         rotation_precise_pub.publish(simulator.is_rotation_precise())
 
         rate.sleep()
-
-
