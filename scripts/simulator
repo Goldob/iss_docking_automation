@@ -10,6 +10,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from iss_docking_automation import StateBuffer
 
 import time
 import numpy as np
@@ -89,29 +90,23 @@ class Simulator():
     # Rotations
     ###########################################################################
 
-    def yaw_left(self, _):
+    def yaw_left(self):
         ActionChains(self._driver).send_keys(Keys.LEFT).perform()
-        return EmptyResponse()
 
-    def yaw_right(self, _):
+    def yaw_right(self):
         ActionChains(self._driver).send_keys(Keys.RIGHT).perform()
-        return EmptyResponse()
 
-    def pitch_up(self, _):
+    def pitch_up(self):
         ActionChains(self._driver).send_keys(Keys.UP).perform()
-        return EmptyResponse()
 
-    def pitch_down(self, _):
+    def pitch_down(self):
         ActionChains(self._driver).send_keys(Keys.DOWN).perform()
-        return EmptyResponse()
 
-    def roll_left(self, _):
+    def roll_left(self):
         ActionChains(self._driver).send_keys('<').perform()
-        return EmptyResponse()
 
-    def roll_right(self, _):
+    def roll_right(self):
         ActionChains(self._driver).send_keys('>').perform()
-        return EmptyResponse()
 
     ###########################################################################
     # Measurements
@@ -211,40 +206,50 @@ def transmit_measurements(step, simulator,
     if step % NUM_MEASUREMENTS == 7:
         rotation_precise_pub.publish(simulator.is_rotation_precise())
 
-def perform_actions(simulator, action_rates):
-    if np.random.random() < action_rates['translate_left']:
-        simulator.translate_left()
-    if np.random.random() < action_rates['translate_right']:
-        simulator.translate_right()
-    if np.random.random() < action_rates['translate_up']:
-        simulator.translate_up()
-    if np.random.random() < action_rates['translate_down']:
-        simulator.translate_down()
-    if np.random.random() < action_rates['translate_forward']:
+def apply_controls(simulator, control_rates):
+
+    # Apply translations
+    if np.random.random() < -control_rates['x']:
         simulator.translate_forward()
-    if np.random.random() < action_rates['translate_backward']:
+    if np.random.random() <  control_rates['x']:
         simulator.translate_backward()
+    if np.random.random() < -control_rates['y']:
+        simulator.translate_left()
+    if np.random.random() <  control_rates['y']:
+        simulator.translate_right()
+    if np.random.random() < -control_rates['z']:
+        simulator.translate_down()
+    if np.random.random() < control_rates['z']:
+        simulator.translate_up()
+
+    # Apply rotations
+    if np.random.random() < -control_rates['yaw']:
+        simulator.yaw_right()
+    if np.random.random() <  control_rates['yaw']:
+        simulator.yaw_left()
+    if np.random.random() < -control_rates['pitch']:
+        simulator.pitch_down()
+    if np.random.random() <  control_rates['pitch']:
+        simulator.pitch_up()
+    if np.random.random() < -control_rates['roll']:
+        simulator.roll_right()
+    if np.random.random() < control_rates['roll']:
+        simulator.roll_left()
 
 if __name__ == '__main__':
     rospy.init_node('iss_simulator')
     simulator = Simulator()
-    holder = ActionRateHolder()
+    controls = StateBuffer()
 
     # Translation controls
-    rospy.Subscriber('controls/translate_left_rate'    , Float64, holder.handle_translate_left)
-    rospy.Subscriber('controls/translate_right_rate'   , Float64, holder.handle_translate_right)
-    rospy.Subscriber('controls/translate_up_rate'      , Float64, holder.handle_translate_up)
-    rospy.Subscriber('controls/translate_down_rate'    , Float64, holder.handle_translate_down)
-    rospy.Subscriber('controls/translate_forward_rate' , Float64, holder.handle_translate_forward)
-    rospy.Subscriber('controls/translate_backward_rate', Float64, holder.handle_translate_backward)
+    rospy.Subscriber('controls/x', Float64, controls.handle_x)
+    rospy.Subscriber('controls/y', Float64, controls.handle_y)
+    rospy.Subscriber('controls/z', Float64, controls.handle_z)
 
-    # Rotation services
-    rospy.Service('controls/yaw_left'  , Empty, simulator.yaw_left)
-    rospy.Service('controls/yaw_right' , Empty, simulator.yaw_right)
-    rospy.Service('controls/pitch_up'  , Empty, simulator.pitch_up)
-    rospy.Service('controls/pitch_down', Empty, simulator.pitch_down)
-    rospy.Service('controls/roll_left' , Empty, simulator.roll_left)
-    rospy.Service('controls/roll_right', Empty, simulator.roll_right)
+    # Rotation controls
+    rospy.Subscriber('controls/yaw'  , Float64, controls.handle_yaw)
+    rospy.Subscriber('controls/pitch', Float64, controls.handle_pitch)
+    rospy.Subscriber('controls/roll' , Float64, controls.handle_roll)
 
     # Measurement publishers
     x_error_pub     = rospy.Publisher('measurements/x_error'    , Float64, queue_size=1)
@@ -278,8 +283,8 @@ if __name__ == '__main__':
                               pitch_error_pub,
                               roll_error_pub)
 
-        if holder.is_initialized():
-            perform_actions(simulator, holder.get_rates())
+        if controls.is_initialized():
+            apply_controls(simulator, controls.get_state())
 
         step += 1
         rate.sleep()
