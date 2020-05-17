@@ -1,0 +1,12 @@
+<launch>
+  <arg name="variable" />
+
+  <remap from="state" to="/measurements/$(arg variable)_error" />
+  <remap from="setpoint" to="/trajectory/target_$(arg variable)" />
+  <remap from="control_effort" to="/corrections/$(arg variable)" />
+
+  <node name="$(arg variable)_controller" type="controller" pkg="pid">
+    <rosparam command="load"
+      file="$(find iss_docking_automation)/cfg/pid_rotation.yaml" />
+  </node>
+</launch>

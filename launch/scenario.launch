@@ -3,11 +3,37 @@
 	<node name="error_to_tf" type="error_to_tf" pkg="iss_docking_automation" />
 
 	<node name="trajectory_planner"
-	      type="trajectory_planner"
-	      pkg="iss_docking_automation">
+		type="trajectory_planner"
+		pkg="iss_docking_automation">
 
 				<param name="maneuver_time" value="60" />
 				<param name="target_velocity" value="0.1" />
 				<param name="stabilization_distance" value="0.5" />
   </node>
+
+	<group ns="controllers">
+		<include file="$(find iss_docking_automation)/launch/pid_translation.launch">
+			<arg name="variable" value="x" />
+		</include>
+
+		<include file="$(find iss_docking_automation)/launch/pid_translation.launch">
+			<arg name="variable" value="y" />
+		</include>
+
+		<include file="$(find iss_docking_automation)/launch/pid_translation.launch">
+			<arg name="variable" value="z" />
+		</include>
+
+		<include file="$(find iss_docking_automation)/launch/pid_rotation.launch">
+			<arg name="variable" value="yaw" />
+		</include>
+
+		<include file="$(find iss_docking_automation)/launch/pid_rotation.launch">
+			<arg name="variable" value="pitch" />
+		</include>
+
+		<include file="$(find iss_docking_automation)/launch/pid_rotation.launch">
+			<arg name="variable" value="roll" />
+		</include>
+	</group>
 </launch>
