@@ -59,33 +59,30 @@ class Simulator():
         self._toggle_rotation_precise = self._driver \
                 .find_element_by_id('toggle-rotation')
 
+    def __del__(self):
+        self._driver.close()
+
     ###########################################################################
     # Translations
     ###########################################################################
 
-    def translate_left(self, _):
+    def translate_left(self):
         ActionChains(self._driver).send_keys('a').perform()
-        return EmptyResponse()
 
-    def translate_right(self, _):
+    def translate_right(self):
         ActionChains(self._driver).send_keys('d').perform()
-        return EmptyResponse()
 
-    def translate_up(self, _):
+    def translate_up(self):
         ActionChains(self._driver).send_keys('w').perform()
-        return EmptyResponse()
 
-    def translate_down(self, _):
+    def translate_down(self):
         ActionChains(self._driver).send_keys('s').perform()
-        return EmptyResponse()
 
-    def translate_forward(self, _):
+    def translate_forward(self):
         ActionChains(self._driver).send_keys('e').perform()
-        return EmptyResponse()
 
-    def translate_backward(self, _):
+    def translate_backward(self):
         ActionChains(self._driver).send_keys('q').perform()
-        return EmptyResponse()
 
     ###########################################################################
     # Rotations
@@ -153,18 +150,60 @@ class Simulator():
     def toggle_rotation_precise(self, _):
         self._toggle_rotation_precise.click()
 
+class ActionRateHolder:
+    def __init__(self):
+        self._rates = {}
+
+    def handle_translate_left(self, msg):
+        self._rates['translate_left'] = msg.data
+
+    def handle_translate_right(self, msg):
+        self._rates['translate_right'] = msg.data
+
+    def handle_translate_up(self, msg):
+        self._rates['translate_up'] = msg.data
+
+    def handle_translate_down(self, msg):
+        self._rates['translate_down'] = msg.data
+
+    def handle_translate_forward(self, msg):
+        self._rates['translate_forward'] = msg.data
+
+    def handle_translate_backward(self, msg):
+        self._rates['translate_backward'] = msg.data
+
+    def is_initialized(self):
+        return len(self._rates) == 6
+
+    def get_rates(self):
+        return self._rates
+
+def perform_actions(simulator, action_rates):
+    if np.random.random() < action_rates['translate_left']:
+        simulator.translate_left()
+    if np.random.random() < action_rates['translate_right']:
+        simulator.translate_right()
+    if np.random.random() < action_rates['translate_up']:
+        simulator.translate_up()
+    if np.random.random() < action_rates['translate_down']:
+        simulator.translate_down()
+    if np.random.random() < action_rates['translate_forward']:
+        simulator.translate_forward()
+    if np.random.random() < action_rates['translate_backward']:
+        simulator.translate_backward()
 
 if __name__ == '__main__':
     rospy.init_node('iss_simulator')
     simulator = Simulator()
+    holder = ActionRateHolder()
 
-    # Translation services
-    rospy.Service('controls/translate_left'    , Empty, simulator.translate_left)
-    rospy.Service('controls/translate_right'   , Empty, simulator.translate_right)
-    rospy.Service('controls/translate_up'      , Empty, simulator.translate_up)
-    rospy.Service('controls/translate_down'    , Empty, simulator.translate_down)
-    rospy.Service('controls/translate_forward' , Empty, simulator.translate_forward)
-    rospy.Service('controls/translate_backward', Empty, simulator.translate_backward)
+    # Translation controls
+    rospy.Subscriber('controls/translate_left_rate'    , Float64, holder.handle_translate_left)
+    rospy.Subscriber('controls/translate_right_rate'   , Float64, holder.handle_translate_right)
+    rospy.Subscriber('controls/translate_up_rate'      , Float64, holder.handle_translate_up)
+    rospy.Subscriber('controls/translate_down_rate'    , Float64, holder.handle_translate_down)
+    rospy.Subscriber('controls/translate_forward_rate' , Float64, holder.handle_translate_forward)
+    rospy.Subscriber('controls/translate_backward_rate', Float64, holder.handle_translate_backward)
 
     # Rotation services
     rospy.Service('controls/yaw_left'  , Empty, simulator.yaw_left)
@@ -194,7 +233,7 @@ if __name__ == '__main__':
     rospy.Service('controls/toggle_rotation_precise', Empty,
                   simulator.toggle_rotation_precise)
 
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(20)
     while not rospy.is_shutdown():
         x_error_pub.publish(simulator.get_x_error())
         y_error_pub.publish(simulator.get_y_error())
@@ -205,5 +244,8 @@ if __name__ == '__main__':
 
         translation_precise_pub.publish(simulator.is_translation_precise())
         rotation_precise_pub.publish(simulator.is_rotation_precise())
+
+        if holder.is_initialized():
+            perform_actions(simulator, holder.get_rates())
 
         rate.sleep()

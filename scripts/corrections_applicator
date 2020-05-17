@@ -10,44 +10,6 @@ from std_msgs.msg import Float64
 import numpy as np
 from iss_docking_automation import StateBuffer
 
-NEVER = rospy.Duration.from_sec(1e9)
-
-class RepeatingTrigger:
-    def __init__(self, function):
-        self._ratio = 0
-        self._function   = function
-        self._duration = NEVER
-
-        self._set_timer()
-
-    def _run(self, _):
-        self._function()
-        self._timer = rospy.Timer(self._duration, self._run)
-
-    def _set_timer(self):
-        self._timer = rospy.Timer(self._duration, self._run)
-        self._next_occurence = rospy.Time().now() + self._duration
-
-    def set_ratio(self, ratio):
-        time = rospy.Time.now()
-
-        if ratio < 1e-9:
-            self._duration = NEVER
-        else:
-            self._duration = rospy.Duration.from_sec(1. / ratio)
-
-        old_ratio = self._ratio
-        self._ratio = ratio
-
-        if ratio < old_ratio:
-            self._timer.shutdown()
-            self._set_timer()
-
-        if ratio > old_ratio:
-            if time + self._duration < self._next_occurence:
-                self._timer.shutdown()
-                self._set_timer()
-
 # Source: https://answers.ros.org/question/196149/how-to-rotate-vector-by-quaternion-in-python/?answer=196155#post-id-196155
 def qv_mult(q1, v1):
     mag = np.linalg.norm(v1)
@@ -74,27 +36,19 @@ if __name__ == '__main__':
     rospy.Subscriber('corrections/pitch', Float64, corrections_buffer.handle_pitch)
     rospy.Subscriber('corrections/roll' , Float64, corrections_buffer.handle_roll)
 
-    # Translation services
-    rospy.wait_for_service('controls/translate_left')
-    rospy.wait_for_service('controls/translate_right')
-    rospy.wait_for_service('controls/translate_up')
-    rospy.wait_for_service('controls/translate_down')
-    rospy.wait_for_service('controls/translate_forward')
-    rospy.wait_for_service('controls/translate_backward')
-
-    translate_left     = rospy.ServiceProxy('controls/translate_left'    , Empty)
-    translate_right    = rospy.ServiceProxy('controls/translate_right'   , Empty)
-    translate_up       = rospy.ServiceProxy('controls/translate_up'      , Empty)
-    translate_down     = rospy.ServiceProxy('controls/translate_down'    , Empty)
-    translate_forward  = rospy.ServiceProxy('controls/translate_forward' , Empty)
-    translate_backward = rospy.ServiceProxy('controls/translate_backward', Empty)
-
-    translate_left_trigger     = RepeatingTrigger(translate_left)
-    translate_right_trigger    = RepeatingTrigger(translate_right)
-    translate_up_trigger       = RepeatingTrigger(translate_up)
-    translate_down_trigger     = RepeatingTrigger(translate_down)
-    translate_forward_trigger  = RepeatingTrigger(translate_forward)
-    translate_backward_trigger = RepeatingTrigger(translate_backward)
+    # Translation controls
+    translate_left_rate_pub     = rospy.Publisher('controls/translate_left_rate',
+                                                  Float64, queue_size=1)
+    translate_right_rate_pub    = rospy.Publisher('controls/translate_right_rate',
+                                                  Float64, queue_size=1)
+    translate_up_rate_pub       = rospy.Publisher('controls/translate_up_rate',
+                                                  Float64, queue_size=1)
+    translate_down_rate_pub     = rospy.Publisher('controls/translate_down_rate',
+                                                  Float64, queue_size=1)
+    translate_forward_rate_pub  = rospy.Publisher('controls/translate_forward_rate',
+                                                  Float64, queue_size=1)
+    translate_backward_rate_pub = rospy.Publisher('controls/translate_backward_rate',
+                                                  Float64, queue_size=1)
 
     tf_buffer = tf2_ros.Buffer()
     tf2_ros.TransformListener(tf_buffer)
@@ -129,11 +83,11 @@ if __name__ == '__main__':
             corrections['z']
         ])
 
-        translate_left_trigger    .set_ratio(max(0, -translation_actuations[0]))
-        translate_right_trigger   .set_ratio(max(0,  translation_actuations[0]))
-        translate_up_trigger      .set_ratio(max(0,  translation_actuations[1]))
-        translate_down_trigger    .set_ratio(max(0, -translation_actuations[1]))
-        translate_forward_trigger .set_ratio(max(0, -translation_actuations[2]))
-        translate_backward_trigger.set_ratio(max(0,  translation_actuations[2]))
+        translate_left_rate_pub    .publish(max(0, -translation_actuations[1]))
+        translate_right_rate_pub   .publish(max(0,  translation_actuations[1]))
+        translate_up_rate_pub      .publish(max(0,  translation_actuations[2]))
+        translate_down_rate_pub    .publish(max(0, -translation_actuations[2]))
+        translate_forward_rate_pub .publish(max(0, -translation_actuations[0]))
+        translate_backward_rate_pub.publish(max(0,  translation_actuations[0]))
 
         rate.sleep()
