@@ -15,6 +15,7 @@ import time
 import numpy as np
 
 START_DELAY = 5.0
+NUM_MEASUREMENTS = 8
 
 class Simulator():
     def __init__(self):
@@ -178,6 +179,38 @@ class ActionRateHolder:
     def get_rates(self):
         return self._rates
 
+def transmit_measurements(step, simulator,
+                          x_error_pub,
+                          y_error_pub,
+                          z_error_pub,
+                          yaw_error_pub,
+                          pitch_error_pub,
+                          roll_error_pub):
+
+    if step % NUM_MEASUREMENTS == 0:
+        x_error_pub.publish(simulator.get_x_error())
+
+    if step % NUM_MEASUREMENTS == 1:
+        y_error_pub.publish(simulator.get_y_error())
+
+    if step % NUM_MEASUREMENTS == 2:
+        z_error_pub.publish(simulator.get_z_error())
+
+    if step % NUM_MEASUREMENTS == 3:
+        yaw_error_pub.publish(simulator.get_yaw_error())
+
+    if step % NUM_MEASUREMENTS == 4:
+        pitch_error_pub.publish(simulator.get_pitch_error())
+
+    if step % NUM_MEASUREMENTS == 5:
+        roll_error_pub.publish(simulator.get_roll_error())
+
+    if step % NUM_MEASUREMENTS == 6:
+        translation_precise_pub.publish(simulator.is_translation_precise())
+
+    if step % NUM_MEASUREMENTS == 7:
+        rotation_precise_pub.publish(simulator.is_rotation_precise())
+
 def perform_actions(simulator, action_rates):
     if np.random.random() < action_rates['translate_left']:
         simulator.translate_left()
@@ -233,19 +266,20 @@ if __name__ == '__main__':
     rospy.Service('controls/toggle_rotation_precise', Empty,
                   simulator.toggle_rotation_precise)
 
-    rate = rospy.Rate(20)
+    rate = rospy.Rate(50)
+    step = 0
     while not rospy.is_shutdown():
-        x_error_pub.publish(simulator.get_x_error())
-        y_error_pub.publish(simulator.get_y_error())
-        z_error_pub.publish(simulator.get_z_error())
-        yaw_error_pub.publish(simulator.get_yaw_error())
-        pitch_error_pub.publish(simulator.get_pitch_error())
-        roll_error_pub.publish(simulator.get_roll_error())
 
-        translation_precise_pub.publish(simulator.is_translation_precise())
-        rotation_precise_pub.publish(simulator.is_rotation_precise())
+        transmit_measurements(step, simulator,
+                              x_error_pub,
+                              y_error_pub,
+                              z_error_pub,
+                              yaw_error_pub,
+                              pitch_error_pub,
+                              roll_error_pub)
 
         if holder.is_initialized():
             perform_actions(simulator, holder.get_rates())
 
+        step += 1
         rate.sleep()
