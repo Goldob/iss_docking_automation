@@ -72,7 +72,7 @@ if __name__ == '__main__':
             t.transform.rotation.w
         ]
 
-        # Calculate desired  translation actuations in local reference
+        # Calculate desired translation actuations in local reference
         translation_actuations = qv_mult(q, [
             corrections['x'],
             corrections['y'],
@@ -84,17 +84,14 @@ if __name__ == '__main__':
         z_control_pub.publish(translation_actuations[2])
 
         # Calculate desired rotation actuations in local reference
-        rotation_actuations = tf_conversions.transformations.quaternion_multiply(
-            tf_conversions.transformations.quaternion_from_euler(corrections['roll'],
-                                                                 corrections['pitch'],
-                                                                 corrections['yaw'])
-        , q)
+        rotation_actuations = qv_mult(q, [
+            corrections['roll'],
+            corrections['pitch'],
+            corrections['yaw']
+        ])
 
-        roll_ctl, pitch_ctl, yaw_ctl = tf_conversions.transformations\
-            .euler_from_quaternion(rotation_actuations)
-
-        yaw_control_pub.publish(yaw_ctl)
-        pitch_control_pub.publish(pitch_ctl)
-        roll_control_pub.publish(roll_ctl)
+        roll_control_pub.publish(rotation_actuations[0])
+        pitch_control_pub.publish(rotation_actuations[1])
+        yaw_control_pub.publish(rotation_actuations[2])
 
         rate.sleep()

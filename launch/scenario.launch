@@ -40,7 +40,7 @@
 	<node name="corrections_applicator"
 		type="corrections_applicator"
 		pkg="iss_docking_automation">
-		
+
 			<param name="max_rate" value="0.1" />
 	</node>
 </launch>
