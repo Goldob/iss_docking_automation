@@ -6,9 +6,9 @@
 		type="trajectory_planner"
 		pkg="iss_docking_automation">
 
-				<param name="maneuver_time" value="420" />
-				<param name="target_velocity" value="0.1" />
-				<param name="stabilization_distance" value="1.0" />
+				<param name="acceleration" value="0.12" />
+				<param name="docking_velocity" value="0.1" />
+				<param name="docking_distance" value="1.0" />
   </node>
 
 	<group ns="controllers">
