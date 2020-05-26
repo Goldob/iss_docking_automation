@@ -3,7 +3,7 @@
 
   <remap from="state" to="/measurements/$(arg variable)_error" />
   <remap from="setpoint" to="/trajectory/pos/$(arg variable)" />
-  <remap from="control_effort" to="/corrections/$(arg variable)" />
+  <remap from="control_effort" to="/target/acc/$(arg variable)" />
 
   <node name="$(arg variable)_controller" type="controller" pkg="pid">
     <rosparam command="load"

@@ -23,18 +23,22 @@ def qv_mult(q1, v1):
     )[:3] * mag
 
 if __name__ == '__main__':
-    rospy.init_node('corrections_applicator')
-    corrections_buffer = StateBuffer()
+    rospy.init_node('command_handler')
+    command_buffer = StateBuffer()
 
-    # Translation corrections
-    rospy.Subscriber('corrections/x', Float64, corrections_buffer.handle_x)
-    rospy.Subscriber('corrections/y', Float64, corrections_buffer.handle_y)
-    rospy.Subscriber('corrections/z', Float64, corrections_buffer.handle_z)
+    # What acceleration does a control value of 1.0 cause?
+    translation_coefficient = rospy.get_param('~translation_coefficient')
+    rotation_coefficient    = rospy.get_param('~rotation_coefficient')
 
-    # Rotation corrections
-    rospy.Subscriber('corrections/yaw'  , Float64, corrections_buffer.handle_yaw)
-    rospy.Subscriber('corrections/pitch', Float64, corrections_buffer.handle_pitch)
-    rospy.Subscriber('corrections/roll' , Float64, corrections_buffer.handle_roll)
+    # Translation commands
+    rospy.Subscriber('target/acc/x', Float64, command_buffer.handle_x)
+    rospy.Subscriber('target/acc/y', Float64, command_buffer.handle_y)
+    rospy.Subscriber('target/acc/z', Float64, command_buffer.handle_z)
+
+    # Rotation commands
+    rospy.Subscriber('target/acc/yaw'  , Float64, command_buffer.handle_yaw)
+    rospy.Subscriber('target/acc/pitch', Float64, command_buffer.handle_pitch)
+    rospy.Subscriber('target/acc/roll' , Float64, command_buffer.handle_roll)
 
     # Translation controls
     x_control_pub = rospy.Publisher('controls/x', Float64, queue_size=1)
@@ -42,16 +46,16 @@ if __name__ == '__main__':
     z_control_pub = rospy.Publisher('controls/z', Float64, queue_size=1)
 
     # Rotation controls
-    yaw_control_pub   = rospy.Publisher('controls/yaw', Float64, queue_size=1)
+    yaw_control_pub   = rospy.Publisher('controls/yaw'  , Float64, queue_size=1)
     pitch_control_pub = rospy.Publisher('controls/pitch', Float64, queue_size=1)
-    roll_control_pub  = rospy.Publisher('controls/roll', Float64, queue_size=1)
+    roll_control_pub  = rospy.Publisher('controls/roll' , Float64, queue_size=1)
 
     tf_buffer = tf2_ros.Buffer()
     tf2_ros.TransformListener(tf_buffer)
 
     rate = rospy.Rate(20)
     while not rospy.is_shutdown():
-        if not corrections_buffer.is_initialized():
+        if not command_buffer.is_initialized():
             rate.sleep()
             continue
 
@@ -63,7 +67,7 @@ if __name__ == '__main__':
             rate.sleep()
             continue
 
-        corrections = corrections_buffer.get_state()
+        commands = command_buffer.get_state()
 
         q = [
             t.transform.rotation.x,
@@ -74,9 +78,9 @@ if __name__ == '__main__':
 
         # Calculate desired translation actuations in local reference
         translation_actuations = qv_mult(q, [
-            corrections['x'],
-            corrections['y'],
-            corrections['z']
+            commands['x'] / translation_coefficient,
+            commands['y'] / translation_coefficient,
+            commands['z'] / translation_coefficient
         ])
 
         x_control_pub.publish(translation_actuations[0])
@@ -85,9 +89,9 @@ if __name__ == '__main__':
 
         # Calculate desired rotation actuations in local reference
         rotation_actuations = qv_mult(q, [
-            corrections['roll'],
-            corrections['pitch'],
-            corrections['yaw']
+            commands['roll']  / rotation_coefficient,
+            commands['pitch'] / rotation_coefficient,
+            commands['yaw']   / rotation_coefficient
         ])
 
         roll_control_pub.publish(rotation_actuations[0])

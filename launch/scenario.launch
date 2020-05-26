@@ -37,10 +37,11 @@
 		</include>
 	</group>
 
-	<node name="corrections_applicator"
-		type="corrections_applicator"
+	<node name="command_handler"
+		type="command_handler"
 		pkg="iss_docking_automation">
 
-			<param name="max_rate" value="0.1" />
+			<param name="translation_coefficient" value="0.12" />
+			<param name="rotation_coefficient" value="1.0" />
 	</node>
 </launch>
