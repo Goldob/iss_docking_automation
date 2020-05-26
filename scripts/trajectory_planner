@@ -25,8 +25,8 @@ def generate_trajectory(error, a, v_dock, r_dock):
     ############################################################################
 
     a_x = - a
-    a_y = - error['y'] / t_3**2
-    a_z = - error['z'] / t_3**2
+    a_y = - error['y'] / t_1**2
+    a_z = - error['z'] / t_1**2
 
     traj_x = ParametricTrajectory(error['x'], a_x, t_2, t_3)
     traj_y = ParametricTrajectory(error['y'], a_y, t_1, t_3)
@@ -36,9 +36,9 @@ def generate_trajectory(error, a, v_dock, r_dock):
     # Rotation trajectory
     ############################################################################
 
-    eps_yaw   = error['yaw']   / t_3**2
-    eps_pitch = error['pitch'] / t_3**2
-    eps_roll  = error['roll']  / t_3**2
+    eps_yaw   = - error['yaw']   / t_1**2
+    eps_pitch = - error['pitch'] / t_1**2
+    eps_roll  = - error['roll']  / t_1**2
 
     traj_yaw   = ParametricTrajectory(error['yaw']  , eps_yaw  , t_1, t_3)
     traj_pitch = ParametricTrajectory(error['pitch'], eps_pitch, t_1, t_3)
