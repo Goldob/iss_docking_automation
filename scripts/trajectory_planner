@@ -149,7 +149,11 @@ if __name__ == '__main__':
     docking_distance = rospy.get_param('~docking_distance')
     path_poses = rospy.get_param('~path_poses', 100)
 
+    path_pub = rospy.Publisher('trajectory/path', Path, queue_size=1)
+
+    ############################################################################
     # Initial measurement subscribers
+    ############################################################################
 
     rospy.Subscriber('measurements/x_error', Float64,
                      error_buffer.handle_x)
@@ -169,23 +173,37 @@ if __name__ == '__main__':
     rospy.Subscriber('measurements/roll_error', Float64,
                      error_buffer.handle_roll)
 
-    # Target trajectory publishers
+    ############################################################################
+    # Trajectory publishers: translation
+    ############################################################################
 
-    target_x_pub = rospy.Publisher('trajectory/target_x', Float64, queue_size=1)
-    target_y_pub = rospy.Publisher('trajectory/target_y', Float64, queue_size=1)
-    target_z_pub = rospy.Publisher('trajectory/target_z', Float64, queue_size=1)
+    pos_x_pub = rospy.Publisher('trajectory/pos/x', Float64, queue_size=1)
+    pos_y_pub = rospy.Publisher('trajectory/pos/y', Float64, queue_size=1)
+    pos_z_pub = rospy.Publisher('trajectory/pos/z', Float64, queue_size=1)
 
-    target_yaw_pub = rospy.Publisher('trajectory/target_yaw',
-                                     Float64, queue_size=1)
+    vel_x_pub = rospy.Publisher('trajectory/vel/x', Float64, queue_size=1)
+    vel_y_pub = rospy.Publisher('trajectory/vel/y', Float64, queue_size=1)
+    vel_z_pub = rospy.Publisher('trajectory/vel/z', Float64, queue_size=1)
 
-    target_pitch_pub = rospy.Publisher('trajectory/target_pitch',
-                                       Float64, queue_size=1)
+    acc_x_pub = rospy.Publisher('trajectory/acc/x', Float64, queue_size=1)
+    acc_y_pub = rospy.Publisher('trajectory/acc/y', Float64, queue_size=1)
+    acc_z_pub = rospy.Publisher('trajectory/acc/z', Float64, queue_size=1)
 
-    target_roll_pub = rospy.Publisher('trajectory/target_roll',
-                                      Float64, queue_size=1)
+    ############################################################################
+    # Trajectory publishers: rotation
+    ############################################################################
 
-    path_pub = rospy.Publisher('trajectory/path', Path,
-                               latch= True, queue_size=1)
+    pos_yaw_pub   = rospy.Publisher('trajectory/pos/yaw'  , Float64, queue_size=1)
+    pos_pitch_pub = rospy.Publisher('trajectory/pos/pitch', Float64, queue_size=1)
+    pos_roll_pub  = rospy.Publisher('trajectory/pos/roll' , Float64, queue_size=1)
+
+    vel_yaw_pub   = rospy.Publisher('trajectory/vel/yaw'  , Float64, queue_size=1)
+    vel_pitch_pub = rospy.Publisher('trajectory/vel/pitch', Float64, queue_size=1)
+    vel_roll_pub  = rospy.Publisher('trajectory/vel/roll' , Float64, queue_size=1)
+
+    acc_yaw_pub   = rospy.Publisher('trajectory/acc/yaw'  , Float64, queue_size=1)
+    acc_pitch_pub = rospy.Publisher('trajectory/acc/pitch', Float64, queue_size=1)
+    acc_roll_pub  = rospy.Publisher('trajectory/acc/roll' , Float64, queue_size=1)
 
     rate = rospy.Rate(20)
     trajectory_initialized = False
@@ -230,12 +248,33 @@ if __name__ == '__main__':
 
                 break
 
-            target_x_pub.publish(traj_x.pos(time))
-            target_y_pub.publish(traj_y.pos(time))
-            target_z_pub.publish(traj_z.pos(time))
+            # Trajectory: translation
 
-            target_yaw_pub.publish(traj_yaw.pos(time))
-            target_pitch_pub.publish(traj_pitch.pos(time))
-            target_roll_pub.publish(traj_roll.pos(time))
+            pos_x_pub.publish(traj_x.pos(time))
+            pos_y_pub.publish(traj_y.pos(time))
+            pos_z_pub.publish(traj_z.pos(time))
+
+            vel_x_pub.publish(traj_x.vel(time))
+            vel_y_pub.publish(traj_y.vel(time))
+            vel_z_pub.publish(traj_z.vel(time))
+
+            acc_x_pub.publish(traj_x.acc(time))
+            acc_y_pub.publish(traj_y.acc(time))
+            acc_z_pub.publish(traj_z.acc(time))
+
+            # Trajectory: rotation
+
+            pos_yaw_pub  .publish(traj_yaw  .pos(time))
+            pos_pitch_pub.publish(traj_pitch.pos(time))
+            pos_roll_pub .publish(traj_roll .pos(time))
+
+            vel_yaw_pub  .publish(traj_yaw  .vel(time))
+            vel_pitch_pub.publish(traj_pitch.vel(time))
+            vel_roll_pub .publish(traj_roll .vel(time))
+
+            acc_yaw_pub  .publish(traj_yaw  .acc(time))
+            acc_pitch_pub.publish(traj_pitch.acc(time))
+            acc_roll_pub .publish(traj_roll .acc(time))
+
 
         rate.sleep()
