@@ -152,26 +152,20 @@ if __name__ == '__main__':
     path_pub = rospy.Publisher('trajectory/path', Path, queue_size=1)
 
     ############################################################################
-    # Initial measurement subscribers
+    # State subscribers: translation
     ############################################################################
 
-    rospy.Subscriber('measurements/x_error', Float64,
-                     error_buffer.handle_x)
+    rospy.Subscriber('state/pos/x', Float64, error_buffer.handle_x)
+    rospy.Subscriber('state/pos/y', Float64, error_buffer.handle_y)
+    rospy.Subscriber('state/pos/z', Float64, error_buffer.handle_z)
 
-    rospy.Subscriber('measurements/y_error', Float64,
-                     error_buffer.handle_y)
+    ############################################################################
+    # State subscribers: rotation
+    ############################################################################
 
-    rospy.Subscriber('measurements/z_error', Float64,
-                     error_buffer.handle_z)
-
-    rospy.Subscriber('measurements/yaw_error', Float64,
-                     error_buffer.handle_yaw)
-
-    rospy.Subscriber('measurements/pitch_error', Float64,
-                     error_buffer.handle_pitch)
-
-    rospy.Subscriber('measurements/roll_error', Float64,
-                     error_buffer.handle_roll)
+    rospy.Subscriber('state/pos/yaw'  , Float64, error_buffer.handle_yaw)
+    rospy.Subscriber('state/pos/pitch', Float64, error_buffer.handle_pitch)
+    rospy.Subscriber('state/pos/roll' , Float64, error_buffer.handle_roll)
 
     ############################################################################
     # Trajectory publishers: translation

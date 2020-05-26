@@ -1,0 +1,152 @@
+#!/usr/bin/env python
+
+import rospy
+
+from std_msgs.msg import Float64
+
+import numpy as np
+
+from pykalman import KalmanFilter
+from iss_docking_automation import StateBuffer
+
+UPDATE_RATE = 20
+
+if __name__ == '__main__':
+    rospy.init_node('kalman_filter')
+    buffer = StateBuffer()
+
+    timestep = 1. / UPDATE_RATE
+
+    max_linear_acceleration  = rospy.get_param('~max_linear_acceleration')
+    max_angular_acceleration = rospy.get_param('~max_angular_acceleration')
+
+    linear_velocity_variance  = 1./3 * (timestep*max_linear_acceleration)**2
+    angular_velocity_variance = 1./3 * (timestep*max_angular_acceleration)**2
+
+    observation_variance = 1./12 * (0.1)**2
+
+    # Transition matrix
+    A = np.identity(12)
+    for i in range(6):
+        A[i, i+6] = timestep
+
+    # Transition covariance matrix
+    Q = np.zeros([12, 12])
+    for i in range(6, 9):
+        Q[i, i] = linear_velocity_variance
+    for i in range(9, 12):
+        Q[i, i] = angular_velocity_variance
+
+    # Observation matrix
+    C = np.zeros([6, 12])
+    for i in range(6):
+        C[i, i] = 1
+
+    # Observations offsets
+    d = np.full(6, -0.5)
+
+    # Observation covariance matrix
+    R = np.zeros([6, 6])
+    for i in range(6):
+        R[i, i] = observation_variance
+
+    kf = KalmanFilter(transition_matrices=A,
+                      transition_covariance=Q,
+                      observation_matrices=C,
+                      observation_offsets=d,
+                      observation_covariance=R)
+
+    ############################################################################
+    # Measurement subscribers: translation
+    ############################################################################
+
+    rospy.Subscriber('measurements/x_error', Float64, buffer.handle_x)
+    rospy.Subscriber('measurements/y_error', Float64, buffer.handle_y)
+    rospy.Subscriber('measurements/z_error', Float64, buffer.handle_z)
+
+    ############################################################################
+    # Measurement subscribers: rotation
+    ############################################################################
+
+    rospy.Subscriber('measurements/yaw_error'  , Float64, buffer.handle_yaw)
+    rospy.Subscriber('measurements/pitch_error', Float64, buffer.handle_pitch)
+    rospy.Subscriber('measurements/roll_error' , Float64, buffer.handle_roll)
+
+    ############################################################################
+    # State publishers: translation
+    ############################################################################
+
+    pos_x_pub = rospy.Publisher('state/pos/x', Float64, queue_size=1)
+    pos_y_pub = rospy.Publisher('state/pos/y', Float64, queue_size=1)
+    pos_z_pub = rospy.Publisher('state/pos/z', Float64, queue_size=1)
+
+    vel_x_pub = rospy.Publisher('state/vel/x', Float64, queue_size=1)
+    vel_y_pub = rospy.Publisher('state/vel/y', Float64, queue_size=1)
+    vel_z_pub = rospy.Publisher('state/vel/z', Float64, queue_size=1)
+
+    ############################################################################
+    # State publishers: rotation
+    ############################################################################
+
+    pos_yaw_pub   = rospy.Publisher('state/pos/yaw'  , Float64, queue_size=1)
+    pos_pitch_pub = rospy.Publisher('state/pos/pitch', Float64, queue_size=1)
+    pos_roll_pub  = rospy.Publisher('state/pos/roll' , Float64, queue_size=1)
+
+    vel_yaw_pub   = rospy.Publisher('state/vel/yaw'  , Float64, queue_size=1)
+    vel_pitch_pub = rospy.Publisher('state/vel/pitch', Float64, queue_size=1)
+    vel_roll_pub  = rospy.Publisher('state/vel/roll' , Float64, queue_size=1)
+
+    rate = rospy.Rate(UPDATE_RATE)
+    initialized = False
+    while not rospy.is_shutdown():
+        if not buffer.is_initialized():
+            rate.sleep()
+            continue
+
+        state = buffer.get_state()
+
+        # Observation
+        z = [
+            state['x'],
+            state['y'],
+            state['z'],
+            state['yaw'],
+            state['pitch'],
+            state['roll']
+        ]
+
+        if not initialized:
+            # Initial estimate
+            x = np.zeros(12)
+            x[0:6] = z
+
+            # Initial estimate covariance
+            P = np.zeros([12, 12])
+
+            initialized = True
+            rate.sleep()
+            continue
+
+        x, P = kf.filter_update(x, P, z)
+
+        # State estimate: translation
+
+        pos_x_pub.publish(x[0])
+        pos_y_pub.publish(x[1])
+        pos_z_pub.publish(x[2])
+
+        vel_x_pub.publish(x[6])
+        vel_y_pub.publish(x[7])
+        vel_z_pub.publish(x[8])
+
+        # State estimate: rotation
+
+        pos_yaw_pub  .publish(x[3])
+        pos_pitch_pub.publish(x[4])
+        pos_roll_pub .publish(x[5])
+
+        vel_yaw_pub  .publish(x[9])
+        vel_pitch_pub.publish(x[10])
+        vel_roll_pub .publish(x[11])
+
+        rate.sleep()

@@ -2,6 +2,14 @@
 	<node name="simulator" type="simulator" pkg="iss_docking_automation" />
 	<node name="error_to_tf" type="error_to_tf" pkg="iss_docking_automation" />
 
+	<node name="kalman_filter"
+		type="kalman_filter"
+		pkg="iss_docking_automation">
+
+		<param name="max_linear_acceleration" value="0.12" />
+		<param name="max_angular_acceleration" value="1.0" />
+	</node>
+
 	<node name="trajectory_planner"
 		type="trajectory_planner"
 		pkg="iss_docking_automation">
@@ -33,7 +41,7 @@
 		type="command_handler"
 		pkg="iss_docking_automation">
 
-			<param name="translation_coefficient" value="0.12" />
-			<param name="rotation_coefficient" value="1.0" />
+		<param name="translation_coefficient" value="0.12" />
+		<param name="rotation_coefficient" value="1.0" />
 	</node>
 </launch>
