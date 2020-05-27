@@ -43,7 +43,7 @@ if __name__ == '__main__':
         C[i, i] = 1
 
     # Observations offsets
-    d = np.full(6, -0.5)
+    d = np.full(6, -0.05)
 
     # Observation covariance matrix
     R = np.zeros([6, 6])
@@ -106,19 +106,19 @@ if __name__ == '__main__':
         state = buffer.get_state()
 
         # Observation
-        z = [
+        z = np.array([
             state['x'],
             state['y'],
             state['z'],
             state['yaw'],
             state['pitch'],
             state['roll']
-        ]
+        ])
 
         if not initialized:
             # Initial estimate
             x = np.zeros(12)
-            x[0:6] = z
+            x[0:6] = z - d
 
             # Initial estimate covariance
             P = np.zeros([12, 12])
