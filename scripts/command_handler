@@ -92,14 +92,16 @@ if __name__ == '__main__':
 
         inv_q = tf_conversions.transformations.quaternion_inverse(q)
 
-        unit_roll = qv_mult(inv_q, [1, 0, 0])
-        unit_yaw  = np.array([0, 0, 1])
+        unit_roll = qv_mult(inv_q, [1., 0., 0.])
+        unit_yaw  = np.array([0., 0., 1.])
         unit_pitch = np.cross(unit_yaw, unit_roll)
         unit_pitch = unit_pitch / np.linalg.norm(unit_pitch)
 
         rotation_actuations = qv_mult(q, (unit_yaw   * commands['yaw'] \
                                         + unit_pitch * commands['pitch'] \
                                         + unit_roll  * commands['roll']))
+
+        rotation_actuations = rotation_actuations / rotation_coefficient
 
         roll_control_pub.publish(rotation_actuations[0])
         pitch_control_pub.publish(rotation_actuations[1])
