@@ -15,5 +15,9 @@
   <depend>python-pandas</depend>
   <depend>python-selenium-pip</depend>
   <depend>python-pykalman</depend>
+  <depend>python-control-pip</depend>
+
+  <!-- dependencies: scikit-build, gfortran -->
+  <depend>python-slycot-pip</depend>
 
 </package>

@@ -1,0 +1,113 @@
+#!/usr/bin/env python
+
+import rospy
+from std_msgs.msg import Float64
+
+import numpy as np
+from iss_docking_automation import StateBuffer
+
+UPDATE_RATE = 20
+
+if __name__ == '__main__':
+    rospy.init_node('summing_point')
+    sig1_buffer = StateBuffer()
+    sig2_buffer = StateBuffer()
+
+    sig1_namespace = rospy.get_param('~first_signal_namespace')
+    sig2_namespace = rospy.get_param('~second_signal_namespace')
+    sum_namespace  = rospy.get_param('~sum_namespace')
+
+    ############################################################################
+    # First signal subscribers: translation
+    ############################################################################
+
+    rospy.Subscriber(sig1_namespace + '/x',
+        Float64, sig1_buffer.handle_x)
+    rospy.Subscriber(sig1_namespace + '/y',
+        Float64, sig1_buffer.handle_y)
+    rospy.Subscriber(sig1_namespace + '/z',
+        Float64, sig1_buffer.handle_z)
+
+    ############################################################################
+    # First signal subscribers: rotation
+    ############################################################################
+
+    rospy.Subscriber(sig1_namespace + '/yaw',
+        Float64, sig1_buffer.handle_yaw)
+    rospy.Subscriber(sig1_namespace + '/pitch',
+        Float64, sig1_buffer.handle_pitch)
+    rospy.Subscriber(sig1_namespace + '/roll',
+        Float64, sig1_buffer.handle_roll)
+
+    ############################################################################
+    # Second signal subscribers: translation
+    ############################################################################
+
+    rospy.Subscriber(sig2_namespace + '/x', Float64,
+        sig2_buffer.handle_x)
+    rospy.Subscriber(sig2_namespace + '/y', Float64,
+        sig2_buffer.handle_y)
+    rospy.Subscriber(sig2_namespace + '/z',
+        Float64, sig2_buffer.handle_z)
+
+    ############################################################################
+    # Second signal subscribers: rotation
+    ############################################################################
+
+    rospy.Subscriber(sig2_namespace + '/yaw',
+        Float64, sig2_buffer.handle_yaw)
+    rospy.Subscriber(sig2_namespace + '/pitch',
+        Float64, sig2_buffer.handle_pitch)
+    rospy.Subscriber(sig2_namespace + '/roll' ,
+        Float64, sig2_buffer.handle_roll)
+
+    ############################################################################
+    # Sum publishers: translation
+    ############################################################################
+
+    sum_x_pub = rospy.Publisher(sum_namespace + '/x',
+        Float64, queue_size=1)
+    sum_y_pub = rospy.Publisher(sum_namespace + '/y',
+        Float64, queue_size=1)
+    sum_z_pub = rospy.Publisher(sum_namespace + '/z',
+        Float64, queue_size=1)
+
+    ############################################################################
+    # Sum publishers: rotation
+    ############################################################################
+
+    sum_yaw_pub   = rospy.Publisher(sum_namespace + '/yaw',
+        Float64, queue_size=1)
+    sum_pitch_pub = rospy.Publisher(sum_namespace + '/pitch',
+        Float64, queue_size=1)
+    sum_roll_pub  = rospy.Publisher(sum_namespace + '/roll',
+        Float64, queue_size=1)
+
+
+    rate = rospy.Rate(20)
+    while not rospy.is_shutdown():
+        if not sig1_buffer.is_initialized():
+            rate.sleep()
+            continue
+        if not sig2_buffer.is_initialized():
+            rate.sleep()
+            continue
+
+        sig1 = sig1_buffer.get_state()
+        sig2 = sig2_buffer.get_state()
+
+        sum = {key: sig1[key] + sig2[key] for key in sig1}
+
+        # Translation
+
+        sum_x_pub.publish(sum['x'])
+        sum_y_pub.publish(sum['y'])
+        sum_z_pub.publish(sum['z'])
+
+        # Rotation
+
+        sum_yaw_pub  .publish(sum['yaw'])
+        sum_pitch_pub.publish(sum['pitch'])
+        sum_roll_pub .publish(sum['roll'])
+
+        rate.sleep()
