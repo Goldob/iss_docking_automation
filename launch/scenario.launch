@@ -2,12 +2,19 @@
 	<node name="simulator" type="simulator" pkg="iss_docking_automation" />
 	<node name="error_to_tf" type="error_to_tf" pkg="iss_docking_automation" />
 
+	<remap from="/target/acc/x" to="/trajectory/acc/x" />
+	<remap from="/target/acc/y" to="/trajectory/acc/y" />
+	<remap from="/target/acc/z" to="/trajectory/acc/z" />
+	<remap from="/target/acc/yaw" to="/trajectory/acc/yaw" />
+	<remap from="/target/acc/pitch" to="/trajectory/acc/pitch" />
+	<remap from="/target/acc/roll" to="/trajectory/acc/roll" />
+
 	<node name="kalman_filter"
 		type="kalman_filter"
 		pkg="iss_docking_automation">
 
-		<param name="max_linear_acceleration" value="0.12" />
-		<param name="max_angular_acceleration" value="1.0" />
+		<param name="linear_acceleration_variance" value="1" />
+		<param name="angular_acceleration_variance" value="1" />
 	</node>
 
 	<node name="trajectory_planner"
@@ -19,27 +26,11 @@
 				<param name="docking_distance" value="1.0" />
   </node>
 
-	<group ns="controllers">
-		<node name="vel_lqr" type="lqr" pkg="iss_docking_automation">
-
-			<param name="actuation_cost" value="1.0" />
-			<param name="state_namespace" value="/state/vel" />
-			<param name="setpoint_namespace" value="/trajectory/vel" />
-			<param name="control_value_namespace" value="/feedback/acc" />
-		</node>
-
-		<node name="acc_sum" type="summing_point" pkg="iss_docking_automation">
-			<param name="first_signal_namespace" value="/feedback/acc" />
-			<param name="second_signal_namespace" value="/trajectory/acc" />
-			<param name="sum_namespace" value="/target/acc" />
-		</node>
-	</group>
-
 	<node name="command_handler"
 		type="command_handler"
 		pkg="iss_docking_automation">
 
-		<param name="translation_coefficient" value="0.12" />
-		<param name="rotation_coefficient" value="10000.0" />
+		<param name="translation_coefficient" value="0.08" />
+		<param name="rotation_coefficient" value="0.7" />
 	</node>
 </launch>

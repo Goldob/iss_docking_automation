@@ -31,22 +31,22 @@ class Simulator():
 
         time.sleep(START_DELAY)
 
-        self._x_error = self._driver.find_element_by_id('x-range') \
+        self._x = self._driver.find_element_by_id('x-range') \
                 .find_element_by_class_name('distance')
 
-        self._y_error = self._driver.find_element_by_id('y-range') \
+        self._y = self._driver.find_element_by_id('y-range') \
                .find_element_by_class_name('distance')
 
-        self._z_error = self._driver.find_element_by_id('z-range') \
+        self._z = self._driver.find_element_by_id('z-range') \
                 .find_element_by_class_name('distance')
 
-        self._yaw_error = self._driver.find_element_by_id('yaw') \
+        self._yaw = self._driver.find_element_by_id('yaw') \
                 .find_element_by_class_name('error')
 
-        self._pitch_error = self._driver.find_element_by_id('pitch') \
+        self._pitch = self._driver.find_element_by_id('pitch') \
                 .find_element_by_class_name('error')
 
-        self._roll_error = self._driver.find_element_by_id('roll') \
+        self._roll = self._driver.find_element_by_id('roll') \
                 .find_element_by_class_name('error')
 
         self._translation_status = self._driver \
@@ -112,23 +112,23 @@ class Simulator():
     # Measurements
     ###########################################################################
 
-    def get_x_error(self):
-        return float(self._x_error.text[:-2])
+    def get_x(self):
+        return float(self._x.text[:-2])
 
-    def get_y_error(self):
-        return float(self._y_error.text[:-2])
+    def get_y(self):
+        return float(self._y.text[:-2])
 
-    def get_z_error(self):
-        return float(self._z_error.text[:-2])
+    def get_z(self):
+        return float(self._z.text[:-2])
 
-    def get_yaw_error(self):
-        return np.radians(float(self._yaw_error.text[:-1]))
+    def get_yaw(self):
+        return float(self._yaw.text[:-1])
 
-    def get_pitch_error(self):
-        return np.radians(float(self._pitch_error.text[:-1]))
+    def get_pitch(self):
+        return float(self._pitch.text[:-1])
 
-    def get_roll_error(self):
-        return np.radians(float(self._roll_error.text[:-1]))
+    def get_roll(self):
+        return float(self._roll.text[:-1])
 
     ###########################################################################
     # Precision
@@ -175,30 +175,26 @@ class ActionRateHolder:
         return self._rates
 
 def transmit_measurements(step, simulator,
-                          x_error_pub,
-                          y_error_pub,
-                          z_error_pub,
-                          yaw_error_pub,
-                          pitch_error_pub,
-                          roll_error_pub):
+                          x_pub, y_pub, zpub,
+                          yaw_pub, pitch_pub, roll_pub):
 
     if step % NUM_MEASUREMENTS == 0:
-        x_error_pub.publish(simulator.get_x_error())
+        x_pub.publish(simulator.get_x())
 
     if step % NUM_MEASUREMENTS == 1:
-        y_error_pub.publish(simulator.get_y_error())
+        y_pub.publish(simulator.get_y())
 
     if step % NUM_MEASUREMENTS == 2:
-        z_error_pub.publish(simulator.get_z_error())
+        z_pub.publish(simulator.get_z())
 
     if step % NUM_MEASUREMENTS == 3:
-        yaw_error_pub.publish(simulator.get_yaw_error())
+        yaw_pub.publish(simulator.get_yaw())
 
     if step % NUM_MEASUREMENTS == 4:
-        pitch_error_pub.publish(simulator.get_pitch_error())
+        pitch_pub.publish(simulator.get_pitch())
 
     if step % NUM_MEASUREMENTS == 5:
-        roll_error_pub.publish(simulator.get_roll_error())
+        roll_pub.publish(simulator.get_roll())
 
     if step % NUM_MEASUREMENTS == 6:
         translation_precise_pub.publish(simulator.is_translation_precise())
@@ -252,12 +248,12 @@ if __name__ == '__main__':
     rospy.Subscriber('controls/roll' , Float64, controls.handle_roll)
 
     # Measurement publishers
-    x_error_pub     = rospy.Publisher('measurements/x_error'    , Float64, queue_size=1)
-    y_error_pub     = rospy.Publisher('measurements/y_error'    , Float64, queue_size=1)
-    z_error_pub     = rospy.Publisher('measurements/z_error'    , Float64, queue_size=1)
-    yaw_error_pub   = rospy.Publisher('measurements/yaw_error'  , Float64, queue_size=1)
-    pitch_error_pub = rospy.Publisher('measurements/pitch_error', Float64, queue_size=1)
-    roll_error_pub  = rospy.Publisher('measurements/roll_error' , Float64, queue_size=1)
+    x_pub     = rospy.Publisher('measurements/x'    , Float64, queue_size=1)
+    y_pub     = rospy.Publisher('measurements/y'    , Float64, queue_size=1)
+    z_pub     = rospy.Publisher('measurements/z'    , Float64, queue_size=1)
+    yaw_pub   = rospy.Publisher('measurements/yaw'  , Float64, queue_size=1)
+    pitch_pub = rospy.Publisher('measurements/pitch', Float64, queue_size=1)
+    roll_pub  = rospy.Publisher('measurements/roll' , Float64, queue_size=1)
 
     translation_precise_pub = rospy.Publisher('controls/translation_precise',
                                               Bool, queue_size=1)
@@ -271,17 +267,13 @@ if __name__ == '__main__':
     rospy.Service('controls/toggle_rotation_precise', Empty,
                   simulator.toggle_rotation_precise)
 
-    rate = rospy.Rate(50)
+    rate = rospy.Rate(10)
     step = 0
     while not rospy.is_shutdown():
 
         transmit_measurements(step, simulator,
-                              x_error_pub,
-                              y_error_pub,
-                              z_error_pub,
-                              yaw_error_pub,
-                              pitch_error_pub,
-                              roll_error_pub)
+                              x_pub, y_pub, z_pub,
+                              yaw_pub, pitch_pub, roll_pub)
 
         if controls.is_initialized():
             apply_controls(simulator, controls.get_state())

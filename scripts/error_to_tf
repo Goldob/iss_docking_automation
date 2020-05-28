@@ -4,38 +4,30 @@ import rospy
 import tf2_ros
 import tf_conversions
 
+import numpy as np
+
 from geometry_msgs.msg import TransformStamped
 from std_msgs.msg import Float64
 from iss_docking_automation import StateBuffer
 
 if __name__ == '__main__':
     rospy.init_node('error_to_tf')
-    error_buffer = StateBuffer()
+    buffer = StateBuffer()
 
-    rospy.Subscriber('measurements/x_error', Float64,
-                   error_buffer.handle_x)
+    rospy.Subscriber('state/pos/x', Float64, buffer.handle_x)
+    rospy.Subscriber('state/pos/y', Float64, buffer.handle_y)
+    rospy.Subscriber('state/pos/z', Float64, buffer.handle_z)
 
-    rospy.Subscriber('measurements/y_error', Float64,
-                   error_buffer.handle_y)
-
-    rospy.Subscriber('measurements/z_error', Float64,
-                   error_buffer.handle_z)
-
-    rospy.Subscriber('measurements/yaw_error', Float64,
-                   error_buffer.handle_yaw)
-
-    rospy.Subscriber('measurements/pitch_error', Float64,
-                   error_buffer.handle_pitch)
-
-    rospy.Subscriber('measurements/roll_error', Float64,
-                   error_buffer.handle_roll)
+    rospy.Subscriber('state/pos/yaw'  , Float64, buffer.handle_yaw)
+    rospy.Subscriber('state/pos/pitch', Float64, buffer.handle_pitch)
+    rospy.Subscriber('state/pos/roll' , Float64, buffer.handle_roll)
 
     rate = rospy.Rate(20)
     while not rospy.is_shutdown():
 
-        if error_buffer.is_initialized():
+        if buffer.is_initialized():
 
-            error = error_buffer.get_state()
+            error = buffer.get_state()
             t = TransformStamped()
 
             t.header.stamp = rospy.Time.now()
@@ -47,9 +39,9 @@ if __name__ == '__main__':
             t.transform.translation.z = error['z']
 
             q = tf_conversions.transformations \
-                    .quaternion_from_euler(error['roll'],
-                                           error['pitch'],
-                                           error['yaw'])
+                    .quaternion_from_euler(np.radians(error['roll']),
+                                           np.radians(error['pitch']),
+                                           np.radians(error['yaw']))
 
             t.transform.rotation.x = q[0]
             t.transform.rotation.y = q[1]

@@ -5,72 +5,147 @@ import rospy
 from std_msgs.msg import Float64
 
 import numpy as np
-
-from pykalman import KalmanFilter
 from iss_docking_automation import StateBuffer
 
 UPDATE_RATE = 20
 
-if __name__ == '__main__':
-    rospy.init_node('kalman_filter')
-    buffer = StateBuffer()
+class KalmanFilter:
+    def __init__(self, initial_estimate, dt, sig2_a, sig2_eps):
 
-    timestep = 1. / UPDATE_RATE
+        sig2_discretization = 1./12 * (0.1)**2
 
-    max_linear_acceleration  = rospy.get_param('~max_linear_acceleration')
-    max_angular_acceleration = rospy.get_param('~max_angular_acceleration')
+        # State estimate
+        self._x = np.zeros([12, 1])
+        self._x[0:6, 0] = initial_estimate
+        self._x[0:6, 0] = self._x[0:6, 0] + 0.05
 
-    linear_velocity_variance  = 1./3 * (timestep*max_linear_acceleration)**2
-    angular_velocity_variance = 1./3 * (timestep*max_angular_acceleration)**2
+        # State estimate covariance
+        self._P = np.zeros([12, 12])
 
-    observation_variance = 1./12 * (0.1)**2
+        # State-transition model
+        self._F = np.identity(12)
+        for i in range(6):
+            self._F[i, i+6] = dt
 
-    # Transition matrix
-    A = np.identity(12)
-    for i in range(6):
-        A[i, i+6] = timestep
+        # Control-input model
+        self._B = np.zeros([12, 6])
+        for i in range(6):
+            self._B[i+6, i] = dt
 
-    # Transition covariance matrix
-    Q = np.zeros([12, 12])
-    for i in range(6, 9):
-        Q[i, i] = linear_velocity_variance
-    for i in range(9, 12):
-        Q[i, i] = angular_velocity_variance
+        # Covariance of the process noise
+        self._Q = np.zeros([12, 12])
+        for i in range(6, 9):
+            self._Q[i, i] = sig2_a
+        for i in range(9, 12):
+            self._Q[i, i] = sig2_eps
 
-    # Observation matrix
-    C = np.zeros([6, 12])
-    for i in range(6):
-        C[i, i] = 1
+        # Observation model
+        self._H = np.zeros([6, 12])
+        for i in range(6):
+            self._H[i, i] = 1
 
-    # Observations offsets
-    d = np.full(6, -0.05)
+        # Covariance of the process noise
+        self._R = np.zeros([6, 6])
+        for i in range(6):
+            self._R[i, i] = sig2_discretization
 
-    # Observation covariance matrix
-    R = np.zeros([6, 6])
-    for i in range(6):
-        R[i, i] = observation_variance
+    def predict(self, actuation):
+        u = np.array([actuation]).T
+        self._x = np.matmul(self._F, self._x) + np.matmul(self._B, u)
+        self._P = np.matmul(self._F, np.matmul(self._P, self._F.T)) + self._Q
 
-    kf = KalmanFilter(transition_matrices=A,
-                      transition_covariance=Q,
-                      observation_matrices=C,
-                      observation_offsets=d,
-                      observation_covariance=R)
+        return np.squeeze(self._x)
+
+    def _update(self, H, R, z):
+        y = z - np.matmul(H, self._x)
+        S = np.matmul(H, np.matmul(self._P, H.T)) + R
+        K = np.matmul(self._P, np.matmul(H.T, np.linalg.inv(S)))
+        I = np.identity(12)
+
+        self._x = self._x + np.matmul(K, y)
+        self._P = np.matmul((I - np.matmul(K, H)), self._P)
+
+    def handle_x(self, msg):
+        self._update(self._H[0:1, :], self._R[0:1, 0:1], msg.data + 0.05)
+
+    def handle_y(self, msg):
+        self._update(self._H[1:2, :], self._R[1:2, 1:2], msg.data + 0.05)
+
+    def handle_z(self, msg):
+        self._update(self._H[2:3, :], self._R[2:3, 2:3], msg.data + 0.05)
+
+    def handle_yaw(self, msg):
+        self._update(self._H[3:4, :], self._R[3:4, 3:4], msg.data + 0.05)
+
+    def handle_pitch(self, msg):
+        self._update(self._H[4:5, :], self._R[4:5, 4:5], msg.data + 0.05)
+
+    def handle_roll(self, msg):
+        self._update(self._H[5:6, :], self._R[5:6, 5:6], msg.data + 0.05)
+
+def register_kf(kf):
 
     ############################################################################
     # Measurement subscribers: translation
     ############################################################################
 
-    rospy.Subscriber('measurements/x_error', Float64, buffer.handle_x)
-    rospy.Subscriber('measurements/y_error', Float64, buffer.handle_y)
-    rospy.Subscriber('measurements/z_error', Float64, buffer.handle_z)
+    rospy.Subscriber('measurements/x', Float64, kf.handle_x)
+    rospy.Subscriber('measurements/y', Float64, kf.handle_y)
+    rospy.Subscriber('measurements/z', Float64, kf.handle_z)
 
     ############################################################################
     # Measurement subscribers: rotation
     ############################################################################
 
-    rospy.Subscriber('measurements/yaw_error'  , Float64, buffer.handle_yaw)
-    rospy.Subscriber('measurements/pitch_error', Float64, buffer.handle_pitch)
-    rospy.Subscriber('measurements/roll_error' , Float64, buffer.handle_roll)
+    rospy.Subscriber('measurements/yaw'  , Float64, kf.handle_yaw)
+    rospy.Subscriber('measurements/pitch', Float64, kf.handle_pitch)
+    rospy.Subscriber('measurements/roll' , Float64, kf.handle_roll)
+
+
+if __name__ == '__main__':
+    rospy.init_node('kalman_filter')
+    state_buffer = StateBuffer()
+    actuation_buffer = StateBuffer()
+
+    dt = 1. / UPDATE_RATE
+
+    linear_acceleration_variance \
+        = rospy.get_param('~linear_acceleration_variance')
+
+    angular_acceleration_variance \
+        = rospy.get_param('~angular_acceleration_variance')
+
+    ############################################################################
+    # Measurement subscribers: translation
+    ############################################################################
+
+    rospy.Subscriber('measurements/x', Float64, state_buffer.handle_x)
+    rospy.Subscriber('measurements/y', Float64, state_buffer.handle_y)
+    rospy.Subscriber('measurements/z', Float64, state_buffer.handle_z)
+
+    ############################################################################
+    # Measurement subscribers: rotation
+    ############################################################################
+
+    rospy.Subscriber('measurements/yaw'  , Float64, state_buffer.handle_yaw)
+    rospy.Subscriber('measurements/pitch', Float64, state_buffer.handle_pitch)
+    rospy.Subscriber('measurements/roll' , Float64, state_buffer.handle_roll)
+
+    ############################################################################
+    # Actuation subscribers: translation
+    ############################################################################
+
+    rospy.Subscriber('target/acc/x', Float64, actuation_buffer.handle_x)
+    rospy.Subscriber('target/acc/y', Float64, actuation_buffer.handle_y)
+    rospy.Subscriber('target/acc/z', Float64, actuation_buffer.handle_z)
+
+    ############################################################################
+    # Actuation subscribers: rotation
+    ############################################################################
+
+    rospy.Subscriber('target/acc/yaw'  , Float64, actuation_buffer.handle_yaw)
+    rospy.Subscriber('target/acc/pitch', Float64, actuation_buffer.handle_pitch)
+    rospy.Subscriber('target/acc/roll' , Float64, actuation_buffer.handle_roll)
 
     ############################################################################
     # State publishers: translation
@@ -96,57 +171,61 @@ if __name__ == '__main__':
     vel_pitch_pub = rospy.Publisher('state/vel/pitch', Float64, queue_size=1)
     vel_roll_pub  = rospy.Publisher('state/vel/roll' , Float64, queue_size=1)
 
+    iter = 0
     rate = rospy.Rate(UPDATE_RATE)
     initialized = False
     while not rospy.is_shutdown():
-        if not buffer.is_initialized():
+        if not state_buffer.is_initialized():
             rate.sleep()
             continue
 
-        state = buffer.get_state()
-
-        # Observation
-        z = np.array([
-            state['x'],
-            state['y'],
-            state['z'],
-            state['yaw'],
-            state['pitch'],
-            state['roll']
-        ])
-
         if not initialized:
-            # Initial estimate
-            x = np.zeros(12)
-            x[0:6] = z - d
+            state = state_buffer.get_state()
 
-            # Initial estimate covariance
-            P = np.zeros([12, 12])
+            initial_estimate = [
+                state['x']  , state['y']    , state['z'],
+                state['yaw'], state['pitch'], state['roll'],
+            ]
+
+            kf = KalmanFilter(initial_estimate, dt,
+                              linear_acceleration_variance,
+                              angular_acceleration_variance)
+
+            register_kf(kf)
 
             initialized = True
             rate.sleep()
             continue
 
-        x, P = kf.filter_update(x, P, z)
+        if actuation_buffer.is_initialized():
+            actuation = actuation_buffer.get_state()
+            actuation = [
+                actuation['x']  , actuation['y']    , actuation['z'],
+                actuation['yaw'], actuation['pitch'], actuation['roll'],
+            ]
+        else:
+            actuation = [0, 0, 0, 0, 0, 0]
+
+        estimate = kf.predict(actuation)
 
         # State estimate: translation
 
-        pos_x_pub.publish(x[0])
-        pos_y_pub.publish(x[1])
-        pos_z_pub.publish(x[2])
+        pos_x_pub.publish(estimate[0])
+        pos_y_pub.publish(estimate[1])
+        pos_z_pub.publish(estimate[2])
 
-        vel_x_pub.publish(x[6])
-        vel_y_pub.publish(x[7])
-        vel_z_pub.publish(x[8])
+        vel_x_pub.publish(estimate[6])
+        vel_y_pub.publish(estimate[7])
+        vel_z_pub.publish(estimate[8])
 
         # State estimate: rotation
 
-        pos_yaw_pub  .publish(x[3])
-        pos_pitch_pub.publish(x[4])
-        pos_roll_pub .publish(x[5])
+        pos_yaw_pub  .publish(estimate[3])
+        pos_pitch_pub.publish(estimate[4])
+        pos_roll_pub .publish(estimate[5])
 
-        vel_yaw_pub  .publish(x[9])
-        vel_pitch_pub.publish(x[10])
-        vel_roll_pub .publish(x[11])
+        vel_yaw_pub  .publish(estimate[9])
+        vel_pitch_pub.publish(estimate[10])
+        vel_roll_pub .publish(estimate[11])
 
         rate.sleep()
