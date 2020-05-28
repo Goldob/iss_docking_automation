@@ -17,6 +17,9 @@ if __name__ == '__main__':
     sig2_namespace = rospy.get_param('~second_signal_namespace')
     sum_namespace  = rospy.get_param('~sum_namespace')
 
+    max_mag_lin = rospy.get_param('~max_magnitude_linear' , float('Inf'))
+    max_mag_ang = rospy.get_param('~max_magnitude_angular', float('Inf'))
+
     ############################################################################
     # First signal subscribers: translation
     ############################################################################
@@ -100,14 +103,14 @@ if __name__ == '__main__':
 
         # Translation
 
-        sum_x_pub.publish(sum['x'])
-        sum_y_pub.publish(sum['y'])
-        sum_z_pub.publish(sum['z'])
+        sum_x_pub.publish(max(-max_mag_lin, min(max_mag_lin, sum['x'])))
+        sum_y_pub.publish(max(-max_mag_lin, min(max_mag_lin, sum['y'])))
+        sum_z_pub.publish(max(-max_mag_lin, min(max_mag_lin, sum['z'])))
 
         # Rotation
 
-        sum_yaw_pub  .publish(sum['yaw'])
-        sum_pitch_pub.publish(sum['pitch'])
-        sum_roll_pub .publish(sum['roll'])
+        sum_yaw_pub  .publish(max(-max_mag_ang, min(max_mag_ang, sum['yaw'])))
+        sum_pitch_pub.publish(max(-max_mag_ang, min(max_mag_ang, sum['pitch'])))
+        sum_roll_pub .publish(max(-max_mag_ang, min(max_mag_ang, sum['roll'])))
 
         rate.sleep()

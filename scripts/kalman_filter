@@ -35,9 +35,9 @@ class KalmanFilter:
         # Covariance of the process noise
         self._Q = np.zeros([12, 12])
         for i in range(6, 9):
-            self._Q[i, i] = sig2_a
+            self._Q[i, i] = sig2_a**2 * dt**2
         for i in range(9, 12):
-            self._Q[i, i] = sig2_eps
+            self._Q[i, i] = sig2_eps**2 * dt**2
 
         # Observation model
         self._H = np.zeros([6, 12])
