@@ -274,12 +274,17 @@ if __name__ == '__main__':
     step = 0
     while not rospy.is_shutdown():
 
-        transmit_measurements(step, simulator,
-                              x_pub, y_pub, z_pub,
-                              yaw_pub, pitch_pub, roll_pub)
+        try:
+            transmit_measurements(step, simulator,
+                                  x_pub, y_pub, z_pub,
+                                  yaw_pub, pitch_pub, roll_pub)
 
-        if controls.is_initialized():
-            apply_controls(simulator, controls.get_state())
+            if controls.is_initialized():
+                apply_controls(simulator, controls.get_state())
+
+        # Ugly hack to prevent the node from crashing when game ends
+        except: pass
+
 
         step += 1
         rate.sleep()
