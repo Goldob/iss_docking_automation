@@ -17,6 +17,7 @@ import numpy as np
 
 START_DELAY = 5.0
 NUM_MEASUREMENTS = 8
+UPDATE_RATE = 10
 
 class Simulator():
     def __init__(self):
@@ -139,12 +140,14 @@ class Simulator():
 
     def toggle_translation_precise(self, _):
         self._toggle_translation_precise.click()
+        return EmptyResponse()
 
     def is_rotation_precise(self):
         return 'large' not in self._rotation_status.get_attribute('class')
 
     def toggle_rotation_precise(self, _):
         self._toggle_rotation_precise.click()
+        return EmptyResponse()
 
 class ActionRateHolder:
     def __init__(self):
@@ -267,7 +270,7 @@ if __name__ == '__main__':
     rospy.Service('controls/toggle_rotation_precise', Empty,
                   simulator.toggle_rotation_precise)
 
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(UPDATE_RATE)
     step = 0
     while not rospy.is_shutdown():
 

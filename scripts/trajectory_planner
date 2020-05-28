@@ -13,6 +13,8 @@ import pandas as pd
 
 from iss_docking_automation import StateBuffer, ParametricTrajectory
 
+UPDATE_RATE = 10
+
 def generate_trajectory(error, a, v_dock, r_dock):
 
     t_2 = np.sqrt(v_dock**2 / (2*a**2) + (error['x'] - r_dock) / a)
@@ -199,7 +201,7 @@ if __name__ == '__main__':
     acc_pitch_pub = rospy.Publisher('trajectory/acc/pitch', Float64, queue_size=1)
     acc_roll_pub  = rospy.Publisher('trajectory/acc/roll' , Float64, queue_size=1)
 
-    rate = rospy.Rate(20)
+    rate = rospy.Rate(UPDATE_RATE)
     trajectory_initialized = False
     while not rospy.is_shutdown():
 

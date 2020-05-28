@@ -7,7 +7,7 @@ from std_msgs.msg import Float64
 import numpy as np
 from iss_docking_automation import StateBuffer
 
-UPDATE_RATE = 20
+UPDATE_RATE = 10
 
 class KalmanFilter:
     def __init__(self, initial_estimate, dt, sig2_a, sig2_eps):

@@ -6,7 +6,7 @@ from std_msgs.msg import Float64
 import numpy as np
 from iss_docking_automation import StateBuffer
 
-UPDATE_RATE = 20
+UPDATE_RATE = 10
 
 if __name__ == '__main__':
     rospy.init_node('summing_point')

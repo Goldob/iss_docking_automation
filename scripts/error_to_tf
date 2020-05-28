@@ -10,6 +10,8 @@ from geometry_msgs.msg import TransformStamped
 from std_msgs.msg import Float64
 from iss_docking_automation import StateBuffer
 
+UPDATE_RATE = 10
+
 if __name__ == '__main__':
     rospy.init_node('error_to_tf')
     buffer = StateBuffer()
@@ -22,7 +24,7 @@ if __name__ == '__main__':
     rospy.Subscriber('state/pos/pitch', Float64, buffer.handle_pitch)
     rospy.Subscriber('state/pos/roll' , Float64, buffer.handle_roll)
 
-    rate = rospy.Rate(20)
+    rate = rospy.Rate(UPDATE_RATE)
     while not rospy.is_shutdown():
 
         if buffer.is_initialized():
