@@ -1,0 +1,58 @@
+<launch>
+  <arg name="setpoint_namespace" />
+  <arg name="control_effort_namespace" default="/feedback" />
+
+  <remap from="state" to="/state/pos/x" />
+  <remap from="setpoint" to="$(arg setpoint_namespace)/pos/x" />
+  <remap from="control_effort" to="$(arg control_effort_namespace)/vel/x" />
+  <node name="pid_x" type="controller" pkg="pid">
+
+    <rosparam command="load"
+      file="$(find iss_docking_automation)/cfg/control/pos/pid_translation.yaml" />
+  </node>
+
+  <remap from="state" to="/state/pos/y" />
+  <remap from="setpoint" to="$(arg setpoint_namespace)/pos/y" />
+  <remap from="control_effort" to="$(arg control_effort_namespace)/vel/y" />
+  <node name="pid_y" type="controller" pkg="pid">
+
+    <rosparam command="load"
+      file="$(find iss_docking_automation)/cfg/control/pos/pid_translation.yaml" />
+  </node>
+
+  <remap from="state" to="/state/pos/z" />
+  <remap from="setpoint" to="$(arg setpoint_namespace)/pos/z" />
+  <remap from="control_effort" to="$(arg control_effort_namespace)/vel/z" />
+  <node name="pid_z" type="controller" pkg="pid">
+
+    <rosparam command="load"
+      file="$(find iss_docking_automation)/cfg/control/pos/pid_translation.yaml" />
+  </node>
+
+  <remap from="state" to="/state/pos/yaw" />
+  <remap from="setpoint" to="$(arg setpoint_namespace)/pos/yaw" />
+  <remap from="control_effort" to="$(arg control_effort_namespace)/vel/yaw" />
+  <node name="pid_yaw" type="controller" pkg="pid">
+
+    <rosparam command="load"
+      file="$(find iss_docking_automation)/cfg/control/pos/pid_rotation.yaml" />
+  </node>
+
+  <remap from="state" to="/state/pos/pitch" />
+  <remap from="setpoint" to="$(arg setpoint_namespace)/pos/pitch" />
+  <remap from="control_effort" to="$(arg control_effort_namespace)/vel/pitch" />
+  <node name="pid_pitch" type="controller" pkg="pid">
+
+    <rosparam command="load"
+      file="$(find iss_docking_automation)/cfg/control/pos/pid_rotation.yaml" />
+  </node>
+
+  <remap from="state" to="/state/pos/roll" />
+  <remap from="setpoint" to="$(arg setpoint_namespace)/pos/roll" />
+  <remap from="control_effort" to="$(arg control_effort_namespace)/vel/roll" />
+  <node name="pid_roll" type="controller" pkg="pid">
+
+    <rosparam command="load"
+      file="$(find iss_docking_automation)/cfg/control/pos/pid_rotation.yaml" />
+  </node>
+</launch>

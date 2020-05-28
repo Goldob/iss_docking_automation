@@ -19,10 +19,16 @@
 				<param name="docking_distance" value="1.0" />
   </node>
 
+	<include ns="/control/pos"
+		file="$(find iss_docking_automation)/launch/control/pos/mixed_loop.launch">
+
+		<arg name="setpoint_namespace" value="/trajectory" />
+	</include>
+
 	<include ns="/control/vel"
 		file="$(find iss_docking_automation)/launch/control/vel/mixed_loop.launch">
 
-		<arg name="setpoint_namespace" value="/trajectory" />
+		<arg name="setpoint_namespace" value="/target" />
 		<arg name="max_linear_acceleration" value="0.08"/>
 	  <arg name="max_angular_acceleration" value="1.0"/>
 	</include>

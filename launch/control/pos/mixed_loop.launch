@@ -1,0 +1,14 @@
+<launch>
+  <arg name="setpoint_namespace" />
+
+  <include file="$(find iss_docking_automation)/launch/control/pos/closed_loop.launch">
+    <arg name="setpoint_namespace" value="$(arg setpoint_namespace)" />
+  </include>
+
+  <node name="vel_sum" type="summing_point" pkg="iss_docking_automation">
+
+    <param name="first_signal_namespace" value="/trajectory/vel" />
+		<param name="second_signal_namespace" value="/feedback/vel" />
+    <param name="sum_namespace" value="/target/vel" />
+	</node>
+</launch>
