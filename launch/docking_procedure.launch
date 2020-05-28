@@ -29,8 +29,8 @@
 		file="$(find iss_docking_automation)/launch/control/vel/mixed_loop.launch">
 
 		<arg name="setpoint_namespace" value="/target" />
-		<arg name="max_linear_acceleration" value="0.08"/>
-	  <arg name="max_angular_acceleration" value="1.0"/>
+		<arg name="max_linear_acceleration" value="0.35"/>
+	  <arg name="max_angular_acceleration" value="1.4"/>
 	</include>
 
 	<node name="command_handler"
