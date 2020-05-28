@@ -39,5 +39,6 @@
 
 		<param name="translation_coefficient" value="0.08" />
 		<param name="rotation_coefficient" value="0.7" />
+		<param name="precision_histeresis" value="0.25" />
 	</node>
 </launch>

@@ -5,10 +5,12 @@ import tf2_ros
 import tf_conversions
 
 from std_srvs.srv import Empty
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Bool
 
 import numpy as np
 from iss_docking_automation import StateBuffer
+
+UPDATE_RATE = 10
 
 # Source: https://answers.ros.org/question/196149/how-to-rotate-vector-by-quaternion-in-python/?answer=196155#post-id-196155
 def qv_mult(q1, v1):
@@ -22,6 +24,59 @@ def qv_mult(q1, v1):
         tf_conversions.transformations.quaternion_conjugate(q1)
     )[:3] * mag
 
+class PrecisionManager:
+    def __init__(self,
+                 toggle_translation_precise,
+                 toggle_rotation_precise,
+                 precision_histeresis,
+                 update_every):
+
+        self._translation_precise = True
+        self._rotation_precise = True
+        self._toggle_translation_precise = toggle_translation_precise
+        self._toggle_rotation_precise = toggle_rotation_precise
+        self._precision_histeresis = precision_histeresis
+        self._update_every = update_every
+
+        self._translation_count = 0
+        self._rotation_count = 0
+
+    def handle_translation_precise(self, msg):
+        self._translation_precise = msg.data
+
+    def handle_rotation_precise(self, msg):
+        self._rotation_precise = msg.data
+
+    def process_translation(self, translation_actuations):
+        self._translation_count += 1
+        if self._translation_count % self._update_every == 0:
+            actuations_magnitude = np.linalg.norm(translation_actuations)
+            if actuations_magnitude > 1.0 and self._translation_precise \
+                or actuations_magnitude < 1.0 - self._precision_histeresis \
+                and not self._translation_precise:
+
+                self._toggle_translation_precise()
+
+        if self._translation_precise:
+            return translation_actuations
+        else:
+            return translation_actuations * 0.2
+
+    def process_rotation(self, rotation_actuations):
+        self._rotation_count += 1
+        if self._rotation_count % self._update_every == 0:
+            actuations_magnitude = np.linalg.norm(rotation_actuations)
+            if actuations_magnitude > 1.0 and self._rotation_precise \
+                or actuations_magnitude < 1.0 - self._precision_histeresis \
+                and not self._rotation_precise:
+
+                self._toggle_rotation_precise()
+
+        if self._rotation_precise:
+            return rotation_actuations
+        else:
+            return rotation_actuations * 0.5
+
 if __name__ == '__main__':
     rospy.init_node('command_handler')
     command_buffer = StateBuffer()
@@ -30,22 +85,61 @@ if __name__ == '__main__':
     translation_coefficient = rospy.get_param('~translation_coefficient')
     rotation_coefficient    = rospy.get_param('~rotation_coefficient')
 
-    # Translation commands
+    # How much should actuations fall below 1.0 to switch back to precise mode?
+    precision_histeresis = rospy.get_param('~precision_histeresis')
+
+    ############################################################################
+    # Command subscribers: translation
+    ############################################################################
+
     rospy.Subscriber('target/acc/x', Float64, command_buffer.handle_x)
     rospy.Subscriber('target/acc/y', Float64, command_buffer.handle_y)
     rospy.Subscriber('target/acc/z', Float64, command_buffer.handle_z)
 
-    # Rotation commands
+    ############################################################################
+    # Command subscribers: rotation
+    ############################################################################
+
     rospy.Subscriber('target/acc/yaw'  , Float64, command_buffer.handle_yaw)
     rospy.Subscriber('target/acc/pitch', Float64, command_buffer.handle_pitch)
     rospy.Subscriber('target/acc/roll' , Float64, command_buffer.handle_roll)
 
-    # Translation controls
+    ############################################################################
+    # Precision management
+    ############################################################################
+
+    rospy.wait_for_service('controls/toggle_translation_precise')
+    rospy.wait_for_service('controls/toggle_rotation_precise')
+
+    toggle_translation_precise \
+        = rospy.ServiceProxy('controls/toggle_translation_precise', Empty)
+
+    toggle_rotation_precise \
+        = rospy.ServiceProxy('controls/toggle_rotation_precise', Empty)
+
+    precision_manager = PrecisionManager(toggle_translation_precise,
+                                         toggle_rotation_precise,
+                                         precision_histeresis,
+                                         update_every=UPDATE_RATE)
+
+    rospy.Subscriber('controls/translation_precise',
+        Bool, precision_manager.handle_translation_precise)
+
+    rospy.Subscriber('controls/rotation_precise',
+        Bool, precision_manager.handle_rotation_precise)
+
+    ############################################################################
+    # Controls publishers: translation
+    ############################################################################
+
     x_control_pub = rospy.Publisher('controls/x', Float64, queue_size=1)
     y_control_pub = rospy.Publisher('controls/y', Float64, queue_size=1)
     z_control_pub = rospy.Publisher('controls/z', Float64, queue_size=1)
 
-    # Rotation controls
+    ############################################################################
+    # Controls publishers: rotation
+    ############################################################################
+
     yaw_control_pub   = rospy.Publisher('controls/yaw'  , Float64, queue_size=1)
     pitch_control_pub = rospy.Publisher('controls/pitch', Float64, queue_size=1)
     roll_control_pub  = rospy.Publisher('controls/roll' , Float64, queue_size=1)
@@ -53,7 +147,7 @@ if __name__ == '__main__':
     tf_buffer = tf2_ros.Buffer()
     tf2_ros.TransformListener(tf_buffer)
 
-    rate = rospy.Rate(20)
+    rate = rospy.Rate(UPDATE_RATE)
     while not rospy.is_shutdown():
         if not command_buffer.is_initialized():
             rate.sleep()
@@ -84,6 +178,9 @@ if __name__ == '__main__':
             commands['z'] / translation_coefficient
         ])
 
+        translation_actuations \
+            = precision_manager.process_translation(translation_actuations)
+
         x_control_pub.publish(translation_actuations[0])
         y_control_pub.publish(translation_actuations[1])
         z_control_pub.publish(translation_actuations[2])
@@ -102,6 +199,8 @@ if __name__ == '__main__':
                                         + unit_roll  * commands['roll']))
 
         rotation_actuations = rotation_actuations / rotation_coefficient
+        rotation_actuations \
+            = precision_manager.process_rotation(rotation_actuations)
 
         roll_control_pub.publish(rotation_actuations[0])
         pitch_control_pub.publish(rotation_actuations[1])
