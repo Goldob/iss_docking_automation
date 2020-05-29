@@ -15,8 +15,8 @@
 		pkg="iss_docking_automation">
 
 				<param name="acceleration" value="0.05" />
-				<param name="docking_velocity" value="0.1" />
-				<param name="docking_distance" value="1.0" />
+				<param name="docking_velocity" value="0.075" />
+				<param name="docking_distance" value="5.0" />
   </node>
 
 	<include ns="/control/pos"
@@ -29,16 +29,16 @@
 		file="$(find iss_docking_automation)/launch/control/vel/mixed_loop.launch">
 
 		<arg name="setpoint_namespace" value="/target" />
-		<arg name="max_linear_acceleration" value="0.35"/>
-	  <arg name="max_angular_acceleration" value="1.4"/>
+		<arg name="max_linear_acceleration" value="1.25"/>
+	  <arg name="max_angular_acceleration" value="5.0"/>
 	</include>
 
 	<node name="command_handler"
 		type="command_handler"
 		pkg="iss_docking_automation">
 
-		<param name="translation_coefficient" value="0.08" />
-		<param name="rotation_coefficient" value="0.7" />
+		<param name="translation_coefficient" value="0.25" />
+		<param name="rotation_coefficient" value="2.5" />
 		<param name="precision_histeresis" value="0.25" />
 	</node>
 </launch>
