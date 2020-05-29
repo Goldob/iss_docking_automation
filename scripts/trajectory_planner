@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# coding: utf-8
 
 import rospy
 import tf_conversions
@@ -11,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from matplotlib.font_manager import FontProperties
 from iss_docking_automation import StateBuffer, ParametricTrajectory
 
 UPDATE_RATE = 10
@@ -101,43 +103,54 @@ def plot_results(maneuver_time, path_poses, history,
     pitch = [f_pitch(ti) for ti in t]
     roll = [f_roll(ti) for ti in t]
 
-    plt.figure(figsize=(15, 8))
+    plt.figure('Trajectory', figsize=(15, 8))
+    prop = FontProperties()
+    prop.set_file('STIXGeneral.ttf')
 
     plt.subplot(231)
-    plt.title('x')
+    plt.title('x [m]')
     plt.plot(t, x)
     plt.plot(history['t'], history['x'])
     plt.legend(['target', 'actual'])
+    plt.grid()
 
     plt.subplot(232)
-    plt.title('y')
+    plt.title('y [m]')
     plt.plot(t, y)
     plt.plot(history['t'], history['y'])
     plt.legend(['target', 'actual'])
+    plt.grid()
 
     plt.subplot(233)
-    plt.title('z')
+    plt.title('z [m]')
     plt.plot(t, z)
     plt.plot(history['t'], history['z'])
     plt.legend(['target', 'actual'])
+    plt.grid()
 
     plt.subplot(234)
-    plt.title('yaw')
+    plt.title(u'yaw [°]')
     plt.plot(t, yaw)
     plt.plot(history['t'], history['yaw'])
+    plt.xlabel('time [s]')
     plt.legend(['target', 'actual'])
+    plt.grid()
 
     plt.subplot(235)
-    plt.title('pitch')
+    plt.title(u'pitch [°]')
     plt.plot(t, pitch)
     plt.plot(history['t'], history['pitch'])
+    plt.xlabel('time [s]')
     plt.legend(['target', 'actual'])
+    plt.grid()
 
     plt.subplot(236)
-    plt.title('roll')
+    plt.title(u'roll [°]')
     plt.plot(t, roll)
     plt.plot(history['t'], history['roll'])
+    plt.xlabel('time [s]')
     plt.legend(['target', 'actual'])
+    plt.grid()
 
     plt.show()
 
