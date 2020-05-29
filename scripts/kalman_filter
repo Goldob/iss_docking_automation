@@ -51,7 +51,7 @@ class KalmanFilter:
 
     def predict(self, actuation):
         u = np.array([actuation]).T
-        self._x = np.matmul(self._F, self._x) + np.matmul(self._B, u)
+        self._x = np.matmul(self._F, self._x) # + np.matmul(self._B, u)
         self._P = np.matmul(self._F, np.matmul(self._P, self._F.T)) + self._Q
 
         return np.squeeze(self._x)
