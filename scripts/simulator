@@ -10,6 +10,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.options import Options
 from iss_docking_automation import StateBuffer
 
 import time
@@ -21,7 +22,10 @@ UPDATE_RATE = 10
 
 class Simulator():
     def __init__(self):
-        self._driver = webdriver.Firefox()
+        options = Options()
+        options.add_argument('--kiosk')
+
+        self._driver = webdriver.Firefox(options=options)
         self._driver.get('https://iss-sim.spacex.com/')
 
         WebDriverWait(self._driver, 30) \
