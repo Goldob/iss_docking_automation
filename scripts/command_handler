@@ -10,7 +10,7 @@ from std_msgs.msg import Float64, Bool
 import numpy as np
 from iss_docking_automation import StateBuffer
 
-UPDATE_RATE = 10
+UPDATE_RATE = 15
 
 # Source: https://answers.ros.org/question/196149/how-to-rotate-vector-by-quaternion-in-python/?answer=196155#post-id-196155
 def qv_mult(q1, v1):
@@ -66,8 +66,8 @@ class PrecisionManager:
         self._rotation_count += 1
         if self._rotation_count % self._update_every == 0:
             actuations_magnitude = np.linalg.norm(rotation_actuations)
-            if actuations_magnitude > 1.0 and self._rotation_precise \
-                or actuations_magnitude < 1.0 - self._precision_histeresis \
+            if actuations_magnitude > 0.8 and self._rotation_precise \
+                or actuations_magnitude < 0.8 - self._precision_histeresis \
                 and not self._rotation_precise:
 
                 self._toggle_rotation_precise()

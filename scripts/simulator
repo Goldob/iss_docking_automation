@@ -18,7 +18,7 @@ import numpy as np
 
 START_DELAY = 5.0
 NUM_MEASUREMENTS = 8
-UPDATE_RATE = 10
+UPDATE_RATE = 15
 
 class Simulator():
     def __init__(self):

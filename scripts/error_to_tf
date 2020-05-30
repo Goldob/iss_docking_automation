@@ -10,7 +10,7 @@ from geometry_msgs.msg import TransformStamped
 from std_msgs.msg import Float64
 from iss_docking_automation import StateBuffer
 
-UPDATE_RATE = 10
+UPDATE_RATE = 60
 
 if __name__ == '__main__':
     rospy.init_node('error_to_tf')

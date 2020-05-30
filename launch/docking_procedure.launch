@@ -14,10 +14,17 @@
 		type="trajectory_planner"
 		pkg="iss_docking_automation">
 
-				<param name="acceleration" value="0.06" />
+				<param name="acceleration" value="0.12" />
 				<param name="docking_velocity" value="0.05" />
 				<param name="docking_distance" value="5.0" />
   </node>
+
+	<!-- <remap from="/target/acc/x" to="/trajectory/acc/x" />
+	<remap from="/target/acc/y" to="/trajectory/acc/y" />
+	<remap from="/target/acc/z" to="/trajectory/acc/z" />
+	<remap from="/target/acc/yaw" to="/trajectory/acc/yaw" />
+	<remap from="/target/acc/pitch" to="/trajectory/acc/pitch" />
+	<remap from="/target/acc/roll" to="/trajectory/acc/roll" /> -->
 
 	<include ns="/control/pos"
 		file="$(find iss_docking_automation)/launch/control/pos/mixed_loop.launch">
@@ -29,16 +36,16 @@
 		file="$(find iss_docking_automation)/launch/control/vel/mixed_loop.launch">
 
 		<arg name="setpoint_namespace" value="/target" />
-		<arg name="max_linear_acceleration" value="1.25"/>
-	  <arg name="max_angular_acceleration" value="5.0"/>
+		<arg name="max_linear_acceleration" value="3.75"/>
+	  <arg name="max_angular_acceleration" value="7.0"/>
 	</include>
 
 	<node name="command_handler"
 		type="command_handler"
 		pkg="iss_docking_automation">
 
-		<param name="translation_coefficient" value="0.25" />
-		<param name="rotation_coefficient" value="2.5" />
-		<param name="precision_histeresis" value="0.25" />
+		<param name="translation_coefficient" value="0.75" />
+		<param name="rotation_coefficient" value="3.5" />
+		<param name="precision_histeresis" value="0.1" />
 	</node>
 </launch>

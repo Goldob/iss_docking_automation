@@ -15,7 +15,7 @@ import pandas as pd
 from matplotlib.font_manager import FontProperties
 from iss_docking_automation import StateBuffer, ParametricTrajectory
 
-UPDATE_RATE = 10
+UPDATE_RATE = 15
 
 def generate_trajectory(error, a, v_dock, r_dock):
 
