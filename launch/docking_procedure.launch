@@ -14,8 +14,8 @@
 		type="trajectory_planner"
 		pkg="iss_docking_automation">
 
-				<param name="acceleration" value="0.05" />
-				<param name="docking_velocity" value="0.075" />
+				<param name="acceleration" value="0.06" />
+				<param name="docking_velocity" value="0.05" />
 				<param name="docking_distance" value="5.0" />
   </node>
 
